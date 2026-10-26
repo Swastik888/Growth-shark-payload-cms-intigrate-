@@ -1,14 +1,14 @@
-import { Helmet } from "react-helmet-async";
+// import { Helmet } from "react-helmet-async";
 import cbs1 from '../../assets/cbs1.jpg'
 import cbs2 from '../../assets/cbs2.jpg'
 import cbs3 from '../../assets/cbs3.jpg'
 const CB2B = () => {
   return (
     <div className="px-6 py-30 text-white bg-gradient-to-r from-black via-[#0b223f] to-[#06263f]">
-      <Helmet>
+      {/* <Helmet>
         <title>Explore B2B Marketing Case Studies That Drive Results | Growthshark</title>
         <meta name="description" content="See how our B2B campaigns generate high-quality leads and conversions. Boost your business growth today with GrowthShark." />
-      </Helmet>
+      </Helmet> */}
   <div className="max-w-6xl mx-auto space-y-12">
 
     {/* Background Section */}

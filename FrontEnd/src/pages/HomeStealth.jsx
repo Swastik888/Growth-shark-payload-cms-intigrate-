@@ -1,4 +1,5 @@
-import { Helmet } from "react-helmet-async";
+import SEO from "../components/SEO";
+import { useGlobal } from "../hooks/useCMS";
 import Hero from "../components/StealthComponents/Hero";
 import AboutSection from "../components/StealthComponents/AboutSection";
 import Why from "../components/StealthComponents/Why";
@@ -11,21 +12,26 @@ import Testimonials from '../components/StealthComponents/Testimonials'
 //bg-gradient-to-r from-[#042f4b] via-[#0e4c74] to-[#1b76b3]
 //
 export default function HomeStealth() {
+    const { data } = useGlobal('home');
+
     return (
         <div className="bg-gradient-to-b from-[#0b223f] to-[#06263f] text-white">
-            <Helmet>
-                          <title>Grow Your Business Online with a Leading Marketing Agency | Growthshark</title>
-                          <meta name="description" content="Looking to grow your business online? GrowthShark provides expert marketing services that boost engagement, generate leads, and increase sales. Get your free consultation today!" />
-                      </Helmet>
+            <SEO
+                meta={data?.stealthMeta}
+                fallback={{
+                    title: "Grow Your Business Online with a Leading Marketing Agency | Growthshark",
+                    description: "Looking to grow your business online? GrowthShark provides expert marketing services that boost engagement, generate leads, and increase sales. Get your free consultation today!",
+                }}
+            />
             <Hero />
             <AboutSection />
             <Why />
-            <PartnerForm/>
-            <Services/>
-            <Financials/>
-            <ReadyForHunt/>
-            <Testimonials/>
-           
+            <PartnerForm />
+            <Services />
+            <Financials />
+            <ReadyForHunt />
+            <Testimonials />
+
         </div>
     );
 }

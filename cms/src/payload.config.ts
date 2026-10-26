@@ -14,26 +14,25 @@ import { Header } from './Header/config'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
+import { PageSEO } from './pageSEO/config'
 
 import { Home } from './Home/config'
+import { Portfolio } from './collections/Portfolio'
+import { CareerPage } from './CareerPage/config'
+import { AboutPage } from './AboutPage/config'
+import { ContactPage } from './ContactPage/config'
+import { Services } from './collections/Services'
+import { Blogs } from './collections/Blogs'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-// Websites allowed to call the CMS API (CMS itself + your Vite React frontend)
-const allowedOrigins = [
-  getServerSideURL(),
-  'http://localhost:5173', 
-].filter(Boolean)
+const allowedOrigins = [getServerSideURL(), 'http://localhost:5173'].filter(Boolean)
 
 export default buildConfig({
   admin: {
     components: {
-      // The `BeforeLogin` component renders a message that you see while logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below.
       beforeLogin: ['@/components/BeforeLogin'],
-      // The `BeforeDashboard` component renders the 'welcome' block that you see after logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below.
       beforeDashboard: ['@/components/BeforeDashboard'],
     },
     importMap: {
@@ -42,36 +41,21 @@ export default buildConfig({
     user: Users.slug,
     livePreview: {
       breakpoints: [
-        {
-          label: 'Mobile',
-          name: 'mobile',
-          width: 375,
-          height: 667,
-        },
-        {
-          label: 'Tablet',
-          name: 'tablet',
-          width: 768,
-          height: 1024,
-        },
-        {
-          label: 'Desktop',
-          name: 'desktop',
-          width: 1440,
-          height: 900,
-        },
+        { label: 'Mobile', name: 'mobile', width: 375, height: 667 },
+        { label: 'Tablet', name: 'tablet', width: 768, height: 1024 },
+        { label: 'Desktop', name: 'desktop', width: 1440, height: 900 },
       ],
     },
   },
-  // This config helps us configure global or default features that the other editors can inherit
+  // Uses updated defaultLexical with FixedToolbarFeature
   editor: defaultLexical,
   db: mongooseAdapter({
     url: process.env.DATABASE_URL || '',
   }),
-  collections: [Pages, Posts, Media, Categories, Users],
+  collections: [Pages, Posts, Media, Categories, Users, Portfolio, Services, Blogs],
   cors: allowedOrigins,
   csrf: allowedOrigins,
-  globals: [Header, Footer, Home /*, About, Career, Contact*/],
+  globals: [Header, Footer, Home, PageSEO, CareerPage, AboutPage, ContactPage],
   plugins,
   secret: process.env.PAYLOAD_SECRET,
   sharp,
@@ -81,15 +65,9 @@ export default buildConfig({
   jobs: {
     access: {
       run: ({ req }: { req: PayloadRequest }): boolean => {
-        // Allow logged in users to execute this endpoint (default)
         if (req.user) return true
-
         const secret = process.env.CRON_SECRET
         if (!secret) return false
-
-        // If there is no logged in user, then check
-        // for the Vercel Cron secret to be present as an
-        // Authorization header:
         const authHeader = req.headers.get('authorization')
         return authHeader === `Bearer ${secret}`
       },

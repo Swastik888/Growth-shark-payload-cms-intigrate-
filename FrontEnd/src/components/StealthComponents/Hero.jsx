@@ -5,7 +5,7 @@ const CMS_URL = import.meta.env.VITE_CMS_URL;
 
 export default function Hero() {
   const { data } = useGlobal('home');
-  const hero = data?.hero;
+  const hero = data?.stealthHero;
 
   const bgImage = hero?.backgroundImage?.url
     ? `${CMS_URL}${hero.backgroundImage.url}`

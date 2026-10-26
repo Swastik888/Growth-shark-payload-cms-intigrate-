@@ -1,15 +1,15 @@
 
 import { GoDotFill } from "react-icons/go";
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+// import { Helmet } from "react-helmet-async";
 
 export default function ContentCreationSection() {
   return (
     <section className="bg-gradient-to-r from-black via-[#0b223f] to-[#06263f] text-white px-6 py-30 sm:py-30">
-      <Helmet>
+      {/* <Helmet>
         <title>Grow your brand & reach with easy, effective content creation | Growthshark</title>
         <meta name="description" content="Engage your audience with content that connects & converts. Increase your reach, build a strong brand, and start growing your online presence today with GrowthShark." />
-      </Helmet>
+      </Helmet> */}
       <div className="max-w-6xl mx-auto ">
         {/* Header */}
         <div className="text-center mb-16">

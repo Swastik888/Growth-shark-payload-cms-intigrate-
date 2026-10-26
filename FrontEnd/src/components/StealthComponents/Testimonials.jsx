@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay } from 'swiper/modules';
 import { FaArrowRight, FaTimes } from 'react-icons/fa';
+import { useGlobal } from '../../hooks/useCMS'; // Adjust path if needed
 import Image1 from '../../assets/images1.jpg';
 import Image2 from '../../assets/images2.jpg';
 import Image3 from '../../assets/images3.jpg';
@@ -12,61 +13,61 @@ import 'swiper/css/navigation';
 
 const testimonials = [
     {
-           firstname: 'Tom',
-           lastname: 'Ford',
-           position: 'CEO, Iennep',
-           testimonial: 'Their design process was smooth and easy to follow. Highly recommend.',
-           avatar: Image1,
-       },
-       {
-           firstname: 'Devid',
-           lastname: 'Dee',
-           position: 'CEO, Deepstack',
-           testimonial: 'Impressive results in record time. These guys know what they’re doing.',
-           avatar: Image2,
-       },
-       {
-           firstname: 'Jacob',
-           lastname: 'Thomason',
-           position: 'CEO, Rentpost',
-           testimonial: 'Very professional team that delivered beyond expectations!',
-           avatar: Image3,
-       },
-       {
-           firstname: 'Jenny',
-           lastname: 'Mark',
-           position: 'CEO, Cofi',
-           testimonial: 'Loved working with them. Great results and support throughout.',
-           avatar: Image1,
-       },
-       {
-           firstname: 'Tom',
-           lastname: 'Ford',
-           position: 'CEO, Iennep',
-           testimonial: 'Their design process was smooth and easy to follow. Highly recommend.',
-           avatar: Image2,
-       },
-       {
-          firstname: 'Devid',
-          lastname: 'Dee',
-           position: 'CEO, Deepstack',
-           testimonial: 'Impressive results in record time. These guys know what they’re doing.',
-           avatar: Image3,
-       },
-       {
-           firstname: 'Jacob',
-           lastname: 'Thomason',
-           position: 'CEO, Rentpost',
-           testimonial: 'Very professional team that delivered beyond expectations!',
-           avatar: Image2,
-       },
-       {
-           firstname: 'Jenny',
-           lastname: 'Mark',
-           position: 'CEO, Cofi',
-           testimonial: 'Loved working with them. Great results and support throughout.',
-           avatar: Image3,
-       },
+        firstname: 'Tom',
+        lastname: 'Ford',
+        position: 'CEO, Iennep',
+        testimonial: 'Their design process was smooth and easy to follow. Highly recommend.',
+        avatar: Image1,
+    },
+    {
+        firstname: 'Devid',
+        lastname: 'Dee',
+        position: 'CEO, Deepstack',
+        testimonial: 'Impressive results in record time. These guys know what they’re doing.',
+        avatar: Image2,
+    },
+    {
+        firstname: 'Jacob',
+        lastname: 'Thomason',
+        position: 'CEO, Rentpost',
+        testimonial: 'Very professional team that delivered beyond expectations!',
+        avatar: Image3,
+    },
+    {
+        firstname: 'Jenny',
+        lastname: 'Mark',
+        position: 'CEO, Cofi',
+        testimonial: 'Loved working with them. Great results and support throughout.',
+        avatar: Image1,
+    },
+    {
+        firstname: 'Tom',
+        lastname: 'Ford',
+        position: 'CEO, Iennep',
+        testimonial: 'Their design process was smooth and easy to follow. Highly recommend.',
+        avatar: Image2,
+    },
+    {
+        firstname: 'Devid',
+        lastname: 'Dee',
+        position: 'CEO, Deepstack',
+        testimonial: 'Impressive results in record time. These guys know what they’re doing.',
+        avatar: Image3,
+    },
+    {
+        firstname: 'Jacob',
+        lastname: 'Thomason',
+        position: 'CEO, Rentpost',
+        testimonial: 'Very professional team that delivered beyond expectations!',
+        avatar: Image2,
+    },
+    {
+        firstname: 'Jenny',
+        lastname: 'Mark',
+        position: 'CEO, Cofi',
+        testimonial: 'Loved working with them. Great results and support throughout.',
+        avatar: Image3,
+    },
 ];
 
 export default function Testimonials() {
@@ -74,10 +75,19 @@ export default function Testimonials() {
     const prevRef = useRef(null);
     const nextRef = useRef(null);
 
+    // Fetching data using your CMS hook
+    const { data: homeData } = useGlobal('home');
+    const testimonialsCMS = homeData?.testimonialsSection;
+
+    // CMS Fallbacks
+    const titleBefore = testimonialsCMS?.titleBefore || 'What';
+    const titleHighlight = testimonialsCMS?.titleHighlight || 'People';
+    const titleAfter = testimonialsCMS?.titleAfter || 'Say About Us';
+
     return (
-        <section className=" text-black px-6 py-16 ">
+        <section className="text-black px-6 py-16">
             <h2 className="text-4xl font-bold text-center mb-12 text-white">
-                What <span className="text-sky-400">People</span> Say About Us
+                {titleBefore} <span className="text-sky-400">{titleHighlight}</span> {titleAfter}
             </h2>
 
             <div className="relative overflow-hidden">
@@ -136,7 +146,7 @@ export default function Testimonials() {
                                     <div className="w-1/2 h-full flex flex-col items-center justify-center text-center">
                                         <img
                                             src={item.avatar}
-                                            alt={item.name}
+                                            alt={item.firstname}
                                             className="w-24 h-24 rounded-full mb-2 object-cover"
                                         />
                                         <h4 className="text-lg font-semibold">{item.firstname}</h4>
@@ -157,8 +167,6 @@ export default function Testimonials() {
                                         </div>
                                     )}
 
-
-
                                     {/* Expand/Collapse Button */}
                                     <button
                                         onClick={() =>
@@ -175,5 +183,5 @@ export default function Testimonials() {
                 </Swiper>
             </div>
         </section>
-    );
+    );
 }

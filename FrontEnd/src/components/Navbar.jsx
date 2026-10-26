@@ -4,6 +4,63 @@ import { FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
 import { motion } from "framer-motion";
 import logo from "../assets/logo.png";
 
+// ---------- Services menu from CMS (falls back to the defaults below) ----------
+const CMS = (import.meta.env.VITE_CMS_URL || "").replace(/\/+$/, "");
+let menuCache = null;
+
+function useServicesMenu() {
+  const [items, setItems] = useState(menuCache || []);
+  useEffect(() => {
+    if (menuCache) return;
+    fetch(`${CMS}/api/services?limit=100&depth=0`)
+      .then((r) => r.json())
+      .then((j) => {
+        menuCache = j.docs || [];
+        setItems(menuCache);
+      })
+      .catch(() => { });
+  }, []);
+  return items;
+}
+
+// Defaults stay as fallback; CMS can rename, hide, or add items
+function mergeMenu(defaults, cms) {
+  const link = (s) => `/services/${s.slug}`;
+  const hidden = new Set(cms.filter((s) => s.showInMenu === false).map(link));
+  const byLink = new Map(cms.map((s) => [link(s), s]));
+  const known = new Set(defaults.map((d) => d.link));
+
+  const base = defaults
+    .filter((d) => !hidden.has(d.link))
+    .map((d) => {
+      const c = byLink.get(d.link);
+      return c?.menuLabel ? { ...d, name: c.menuLabel } : d;
+    });
+
+  const extra = cms
+    .filter((s) => s.showInMenu !== false && !known.has(link(s)))
+    .map((s) => ({ name: s.menuLabel || s.title, link: link(s) }));
+
+  return [...base, ...extra];
+}
+
+const DEFAULT_MAIN = [
+  { name: "B2B SEO", link: "/services/b2b-seo-service" },
+  { name: "Blog Writing", link: "/services/blog-writing-service" },
+  { name: "Community Management", link: "/services/community-management" },
+  { name: "Copywriting", link: "/services/copywriting-services" },
+  { name: "E-commerce SEO", link: "/services/ecommerce-seo-services" },
+  { name: "Email Marketing", link: "/services/email-marketing-services" },
+  { name: "Video Content", link: "/services/video-editing-service" },
+];
+
+const DEFAULT_SOCIAL = [
+  { name: "Facebook Marketing", link: "/services/facebook-marketing" },
+  { name: "Instagram Marketing", link: "/services/insta-marketing" },
+  { name: "Social Listening & Monitoring", link: "/services/social-listening" },
+  { name: "Content Creation & Scheduling", link: "/services/content-creation-services" },
+];
+
 export default function Navbar({ toggleMode, isStealth }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -14,19 +71,25 @@ export default function Navbar({ toggleMode, isStealth }) {
   const useLoggedState = (initialValue, name) => {
     const [state, setState] = useState(initialValue);
 
-    const loggedSetState = useCallback((value) => {
-      console.log(`Setting ${name} to:`, value);
-      setState(value);
-    }, [name]);
+    const loggedSetState = useCallback(
+      (value) => {
+        console.log(`Setting ${name} to:`, value);
+        setState(value);
+      },
+      [name]
+    );
 
     return [state, loggedSetState];
   };
 
   // Use custom hook for all states - MUST be declared before any useEffect that uses them
-  const [isOpen, setIsOpen] = useLoggedState(false, 'Mobile Menu Open');
-  const [isServicesOpen, setIsServicesOpen] = useLoggedState(false, 'Desktop Services Open');
-  const [isMobileServicesOpen, setIsMobileServicesOpen] = useLoggedState(false, 'Mobile Services Open');
-  const [isSocialMediaSubMenuOpen, setIsSocialMediaSubMenuOpen] = useLoggedState(false, 'Social Media Submenu Open');
+  const [isOpen, setIsOpen] = useLoggedState(false, "Mobile Menu Open");
+  const [isServicesOpen, setIsServicesOpen] = useLoggedState(false, "Desktop Services Open");
+  const [isMobileServicesOpen, setIsMobileServicesOpen] = useLoggedState(false, "Mobile Services Open");
+  const [isSocialMediaSubMenuOpen, setIsSocialMediaSubMenuOpen] = useLoggedState(
+    false,
+    "Social Media Submenu Open"
+  );
 
   const navItems = [
     { name: "Home", link: "/" },
@@ -38,29 +101,16 @@ export default function Navbar({ toggleMode, isStealth }) {
     { name: "Blogs", link: "/blog" },
   ];
 
-  // Main services excluding social media marketing services
-  const mainServices = [
-    // { name: "Automation & Personalization", link: "/services/automation" },
-    { name: "B2B SEO", link: "/services/b2b-seo-service" },
-    { name: "Blog Writing", link: "/services/blog-writing-service" },
-    // { name: "Community Engagement", link: "/services/community-engagement" },
-    { name: "Community Management", link: "/services/community-management" },
-    { name: "Copywriting", link: "/services/copywriting-services" },
-    { name: "E-commerce SEO", link: "/services/ecommerce-seo-services" },
-    // { name: "Email Campaigns", link: "/services/email-campaign" },
-    { name: "Email Marketing", link: "/services/email-marketing-services" },
-    // { name: "Feedback & Review Management", link: "/services/feedback" },
-    // { name: "Online Engagement", link: "/services/online-engagement" },
-    { name: "Video Content", link: "/services/video-editing-service" },
-  ];
-
-  // Social Media Marketing services
-  const socialMediaServices = [
-    { name: "Facebook Marketing", link: "/services/facebook-marketing" },
-    { name: "Instagram Marketing", link: "/services/insta-marketing" },
-    { name: "Social Listening & Monitoring", link: "/services/social-listening" },
-    { name: "Content Creation & Scheduling", link: "/services/content-creation-services" },
-  ];
+  // Services: defaults merged with whatever the CMS has
+  const cmsServices = useServicesMenu();
+  const mainServices = mergeMenu(
+    DEFAULT_MAIN,
+    cmsServices.filter((s) => s.menuGroup !== "social")
+  );
+  const socialMediaServices = mergeMenu(
+    DEFAULT_SOCIAL,
+    cmsServices.filter((s) => s.menuGroup === "social")
+  );
 
   const services = [...mainServices, ...socialMediaServices];
 
@@ -88,8 +138,6 @@ export default function Navbar({ toggleMode, isStealth }) {
     // Special handling for campaign pages
     const campaignPaths = ["/lawyer", "/plumber", "/roofer", "/dental"];
     if (campaignPaths.includes(location.pathname)) {
-      // Navigate directly to the appropriate home page variant
-      // and ensure mode is toggled via toggleMode if required
       toggleMode();
       navigate("/");
       return;
@@ -114,7 +162,7 @@ export default function Navbar({ toggleMode, isStealth }) {
     if (redirectPaths.includes(currentPath) || isBlogPage) {
       console.log("Redirecting to home: /");
       navigate("/");
-    };
+    }
   };
 
   useEffect(() => {
@@ -122,7 +170,7 @@ export default function Navbar({ toggleMode, isStealth }) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsServicesOpen(false);
         // Only close social media submenu for desktop, not mobile
-        if (window.innerWidth >= 768) { // md breakpoint
+        if (window.innerWidth >= 768) {
           setIsSocialMediaSubMenuOpen(false);
         }
       }
@@ -133,28 +181,10 @@ export default function Navbar({ toggleMode, isStealth }) {
 
   // Add effect to handle mobile menu closing
   useEffect(() => {
-    // If mobile menu is closed, ensure submenus are also closed
     if (!isOpen) {
       setIsMobileServicesOpen(false);
-      // Don't close social media submenu here as it might cause the issue
-      // setIsSocialMediaSubMenuOpen(false);
     }
   }, [isOpen]);
-
-  // Reusable underline
-  const Underline = ({ link }) => (
-    <motion.div
-      initial={{ width: 0 }}
-      animate={
-        hovered === link || location.pathname === link
-          ? { width: "100%" }
-          : { width: 0 }
-      }
-      transition={{ duration: 0.3 }}
-      className={`absolute left-0 -bottom-1 h-0.5 ${location.pathname === link ? "bg-lime-400" : "bg-white"
-        }`}
-    />
-  );
 
   // Detect if any service page is active
   const isServicePage = services.some((s) => s.link === location.pathname);
@@ -164,9 +194,9 @@ export default function Navbar({ toggleMode, isStealth }) {
 
   // Add effect to log state changes for debugging
   useEffect(() => {
-    console.log('Mobile Menu Open:', isOpen);
-    console.log('Mobile Services Open:', isMobileServicesOpen);
-    console.log('Social Media Submenu Open:', isSocialMediaSubMenuOpen);
+    console.log("Mobile Menu Open:", isOpen);
+    console.log("Mobile Services Open:", isMobileServicesOpen);
+    console.log("Social Media Submenu Open:", isSocialMediaSubMenuOpen);
   }, [isOpen, isMobileServicesOpen, isSocialMediaSubMenuOpen]);
 
   return (
@@ -205,19 +235,19 @@ export default function Navbar({ toggleMode, isStealth }) {
                     />
                     <span
                       className={`absolute left-0 -bottom-1 h-0.5 transition-all duration-300 ${isServicePage || isSocialMediaServiceActive
-                        ? "w-full bg-lime-400 shadow-[0_0_6px_rgba(0,0,0,0.4)]"
-                        : "w-0 group-hover:w-full bg-white"
+                          ? "w-full bg-lime-400 shadow-[0_0_6px_rgba(0,0,0,0.4)]"
+                          : "w-0 group-hover:w-full bg-white"
                         }`}
                     />
                   </button>
                   <div
-                    className={`absolute top-full left-0 mt-3 w-80 max-h-72 overflow-y-auto bg-[#71b5f0] text-black shadow-lg rounded-lg origin-top transition duration-300 ${isServicesOpen ? "animate-fadeScale" : "hidden"
+                    className={`absolute top-full left-0 mt-3 w-80 max-h-[80vh] overflow-y-auto bg-[#71b5f0] text-black shadow-lg rounded-lg origin-top transition duration-300 ${isServicesOpen ? "animate-fadeScale" : "hidden"
                       }`}
                   >
                     {/* Main Services */}
                     {mainServices.map((service) => (
                       <Link
-                        key={service.name}
+                        key={service.link}
                         to={service.link}
                         onClick={() => setIsServicesOpen(false)}
                         onMouseEnter={() => setHovered(service.link)}
@@ -227,8 +257,8 @@ export default function Navbar({ toggleMode, isStealth }) {
                         {service.name}
                         <span
                           className={`absolute left-0 bottom-0 h-0.5 transition-all duration-300 ${location.pathname === service.link
-                            ? "w-full bg-lime-400 shadow-[0_0_6px_rgba(0,0,0,0.4)]"
-                            : "w-0 group-hover:w-full bg-white"
+                              ? "w-full bg-lime-400 shadow-[0_0_6px_rgba(0,0,0,0.4)]"
+                              : "w-0 group-hover:w-full bg-white"
                             }`}
                         />
                       </Link>
@@ -247,15 +277,18 @@ export default function Navbar({ toggleMode, isStealth }) {
                       >
                         <span>Social Media Marketing Services</span>
                         <FaChevronDown
-                          className={`transform transition-transform duration-200 ${isSocialMediaSubMenuOpen ? 'rotate-180' : 'rotate-0'
+                          className={`transform transition-transform duration-200 ${isSocialMediaSubMenuOpen ? "rotate-180" : "rotate-0"
                             }`}
                           size={12}
                         />
                       </button>
-                      <div className={`pl-3 transition-all duration-300 ease-in-out overflow-hidden ${isSocialMediaSubMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div
+                        className={`pl-3 transition-all duration-300 ease-in-out overflow-hidden ${isSocialMediaSubMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                          }`}
+                      >
                         {socialMediaServices.map((service) => (
                           <Link
-                            key={service.name}
+                            key={service.link}
                             to={service.link}
                             onClick={() => setIsServicesOpen(false)}
                             onMouseEnter={() => setHovered(service.link)}
@@ -265,8 +298,8 @@ export default function Navbar({ toggleMode, isStealth }) {
                             {service.name}
                             <span
                               className={`absolute left-0 bottom-0 h-0.5 transition-all duration-300 ${location.pathname === service.link
-                                ? "w-full bg-lime-400 shadow-[0_0_6px_rgba(0,0,0,0.4)]"
-                                : "w-0 group-hover:w-full bg-white"
+                                  ? "w-full bg-lime-400 shadow-[0_0_6px_rgba(0,0,0,0.4)]"
+                                  : "w-0 group-hover:w-full bg-white"
                                 }`}
                             />
                           </Link>
@@ -276,15 +309,12 @@ export default function Navbar({ toggleMode, isStealth }) {
                   </div>
                 </div>
               ) : (
-                <Link
-                  to={item.link}
-                  className="relative group px-1 py-1 transition text-black"
-                >
+                <Link to={item.link} className="relative group px-1 py-1 transition text-black">
                   {item.name}
                   <span
                     className={`absolute left-0 -bottom-1 h-0.5 transition-all duration-300 ${location.pathname === item.link
-                      ? "w-full bg-lime-400 shadow-[0_0_6px_rgba(0,0,0,0.4)]"
-                      : "w-0 group-hover:w-full bg-white"
+                        ? "w-full bg-lime-400 shadow-[0_0_6px_rgba(0,0,0,0.4)]"
+                        : "w-0 group-hover:w-full bg-white"
                       }`}
                   />
                 </Link>
@@ -318,13 +348,8 @@ export default function Navbar({ toggleMode, isStealth }) {
                 <li key="services">
                   <button
                     onClick={() => {
-                      console.log('Main Mobile Services Clicked. Current state:', isMobileServicesOpen);
-                      console.log('Social Media Submenu state:', isSocialMediaSubMenuOpen);
                       setIsMobileServicesOpen(!isMobileServicesOpen);
-                      // Only reset submenu state when closing main menu AND when the submenu is open
-                      // This prevents resetting the state when just opening the main menu
                       if (isMobileServicesOpen && isSocialMediaSubMenuOpen) {
-                        console.log('Resetting Social Media Submenu state');
                         setIsSocialMediaSubMenuOpen(false);
                       }
                     }}
@@ -338,11 +363,11 @@ export default function Navbar({ toggleMode, isStealth }) {
                     />
                   </button>
                   {(isMobileServicesOpen || isSocialMediaSubMenuOpen) && (
-                    <div className="mt-2 ml-4 max-h-64 overflow-y-auto pr-2">
+                    <div className="mt-2 ml-4 max-h-[60vh] overflow-y-auto pr-2">
                       {/* Main Services */}
                       {mainServices.map((service) => (
                         <Link
-                          key={service.name}
+                          key={service.link}
                           to={service.link}
                           className="block py-2 text-base hover:text-white"
                           onClick={() => {
@@ -360,22 +385,23 @@ export default function Navbar({ toggleMode, isStealth }) {
                           className="flex items-center justify-between w-full  py-2 text-base"
                           onClick={(e) => {
                             e.stopPropagation();
-                            console.log('Social Media Submenu Clicked. Current state:', isSocialMediaSubMenuOpen);
                             setIsSocialMediaSubMenuOpen(!isSocialMediaSubMenuOpen);
-                            console.log('Social Media Submenu New state:', !isSocialMediaSubMenuOpen);
                           }}
                         >
                           <span>Social Media Marketing Services</span>
                           <FaChevronDown
-                            className={`transform transition-transform duration-200 ease-in-out ${isSocialMediaSubMenuOpen ? 'rotate-180' : 'rotate-0'
+                            className={`transform transition-transform duration-200 ease-in-out ${isSocialMediaSubMenuOpen ? "rotate-180" : "rotate-0"
                               }`}
                             size={12}
                           />
                         </button>
-                        <div className={` pl-3 transition-all duration-300 ease-in-out overflow-hidden ${isSocialMediaSubMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                        <div
+                          className={` pl-3 transition-all duration-300 ease-in-out overflow-hidden ${isSocialMediaSubMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                            }`}
+                        >
                           {socialMediaServices.map((service) => (
                             <Link
-                              key={service.name}
+                              key={service.link}
                               to={service.link}
                               className="block py-2 text-sm hover:text-white"
                               onClick={() => {
@@ -394,11 +420,7 @@ export default function Navbar({ toggleMode, isStealth }) {
                 </li>
               ) : (
                 <li key={item.name}>
-                  <Link
-                    to={item.link}
-                    onClick={() => setIsOpen(false)}
-                    className="hover:text-white"
-                  >
+                  <Link to={item.link} onClick={() => setIsOpen(false)} className="hover:text-white">
                     {item.name}
                   </Link>
                 </li>

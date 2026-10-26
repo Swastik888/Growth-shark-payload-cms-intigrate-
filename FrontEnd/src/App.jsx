@@ -1,6 +1,13 @@
+
 import { Helmet, HelmetProvider } from "react-helmet-async";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import { useState } from "react";
+
 import ScrollToTop from "./components/ScrollToTop";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -19,36 +26,41 @@ import CampaignPlumbers from "./pages/CampaignPlumbers";
 import CampaignRoofers from "./pages/CampaignRoofers";
 import CampaignDental from "./pages/CampaignDental";
 
-// Portfolio Case Pages
-import Smm1 from "./pages/portfolio/Smm1";
-import Smm2 from "./pages/portfolio/Smm2";
-import PMS from "./pages/portfolio/PMS";
-import OCS from "./pages/portfolio/OCS";
-import CB2B from "./pages/portfolio/CB2B";
+// Dynamic Portfolio Case Study Page
+import CaseStudy from "./pages/portfolio/CaseStudy";
 
 // Services
-// import Automation from "./pages/services/Automation";
-import B2B from "./pages/services/B2B";
-import Blog from "./pages/services/Blog";
-// import CommunityEngagement from "./pages/services/CommunityEngagement";
-import CommunityManagement from "./pages/services/CommunityManagement";
-import ContentCreation from "./pages/services/ContentCreation";
-import CopyWriting from "./pages/services/CopyWriting";
-import Ecommerce from "./pages/services/Ecommerce";
-// import EmailCampaigns from "./pages/services/EmailCampaigns";
-import EmailMarketing from "./pages/services/EmailMarketing";
-import FacebookMarketing from "./pages/services/FacebookMarketing";
-// import Feedback from "./pages/services/Feedback";
-import InstaMarketing from "./pages/services/InstaMarketing";
-// import OnlineEngagement from "./pages/services/OnlineEngagement";
-import SocialListening from "./pages/services/SocialListening";
-import VideoContent from "./pages/services/VideoContent";
+import ServicePage from "./pages/services/ServicePage";
 
-// Canonical Helmet
+// SEO
+import PageSEO from "./components/pageSEO";
+
+// Canonical URL management
 function CanonicalHelmet() {
   const location = useLocation();
-  const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5173";
-  const canonicalUrl = `${baseUrl}${location.pathname.replace(/\/$/, "")}`;
+  const pathname = location.pathname;
+
+  // BlogList and BlogPost manage their canonical URLs through SEO.jsx.
+  // Avoid generating duplicate canonical tags for these routes.
+  const isBlogPage =
+    pathname === "/blog" ||
+    pathname.startsWith("/blog/");
+
+  if (isBlogPage) {
+    return null;
+  }
+
+  const baseUrl = (
+    import.meta.env.VITE_BASE_URL ||
+    window.location.origin
+  ).replace(/\/+$/, "");
+
+  const normalizedPath =
+    pathname === "/"
+      ? "/"
+      : pathname.replace(/\/+$/, "");
+
+  const canonicalUrl = `${baseUrl}${normalizedPath}`;
 
   return (
     <Helmet>
@@ -60,10 +72,12 @@ function CanonicalHelmet() {
 function AppContent() {
   const [isStealth, setIsStealth] = useState(false);
   const location = useLocation();
+
   const isCampaignPage = location.pathname.startsWith("/lawers");
 
   const toggleMode = () => {
     console.log("Toggling mode, isStealth before:", isStealth);
+
     setIsStealth((prev) => {
       console.log("isStealth after:", !prev);
       return !prev;
@@ -73,47 +87,75 @@ function AppContent() {
   return (
     <>
       <CanonicalHelmet />
+
       <ScrollToTop />
-      <Navbar toggleMode={toggleMode} isStealth={isStealth} />
+
+      <Navbar
+        toggleMode={toggleMode}
+        isStealth={isStealth}
+      />
+
+      {/* Static page SEO. Individual blog posts manage their own SEO. */}
+      <PageSEO />
+
       <Routes>
-        <Route path="/" element={isStealth ? <HomeStealth /> : <HomeAttack />} />
+        <Route
+          path="/"
+          element={
+            isStealth ? <HomeStealth /> : <HomeAttack />
+          }
+        />
+
         <Route path="/attack" element={<HomeAttack />} />
         <Route path="/stealth" element={<HomeStealth />} />
+
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/career" element={<Career />} />
         <Route path="/portfolio" element={<Portfolio />} />
-        <Route path="/lawyer" element={<CampaignLawFirms />} />
-        <Route path="/plumber" element={<CampaignPlumbers />} />
-        <Route path="/roofer" element={<CampaignRoofers />} />
-        <Route path="/dental" element={<CampaignDental />} />
-        {/* Portfolio Cases */}
-        <Route path="/portfolio/smm1" element={<Smm1 />} />
-        <Route path="/portfolio/smm2" element={<Smm2 />} />
-        <Route path="/portfolio/pms" element={<PMS />} />
-        <Route path="/portfolio/ocs" element={<OCS />} />
-        <Route path="/portfolio/cb2b" element={<CB2B />} />
-        {/* Services */}
-        {/* <Route path="/services/automation" element={<Automation />} /> */}
-        <Route path="/services/b2b-seo-service" element={<B2B />} />
-        <Route path="/services/blog-writing-service" element={<Blog />} />
-        {/* <Route path="/services/community-engagement" element={<CommunityEngagement />} /> */}
-        <Route path="/services/community-management" element={<CommunityManagement />} />
-        <Route path="/services/content-creation-services" element={<ContentCreation />} />
-        <Route path="/services/copywriting-services" element={<CopyWriting />} />
-        <Route path="/services/ecommerce-seo-services" element={<Ecommerce />} />
-        {/* <Route path="/services/email-campaign" element={<EmailCampaigns />} /> */}
-        <Route path="/services/email-marketing-services" element={<EmailMarketing />} />
-        <Route path="/services/facebook-marketing" element={<FacebookMarketing />} />
-        {/* <Route path="/services/feedback" element={<Feedback />} /> */}
-        <Route path="/services/insta-marketing" element={<InstaMarketing />} />
-        {/* <Route path="/services/online-engagement" element={<OnlineEngagement />} /> */}
-        <Route path="/services/social-listening" element={<SocialListening />} />
-        <Route path="/services/video-editing-service" element={<VideoContent />} />
-        {/* Blog */}
+
+        {/* Dynamic Portfolio Case Study */}
+        <Route
+          path="/portfolio/:slug"
+          element={<CaseStudy />}
+        />
+
+        {/* Campaign pages */}
+        <Route
+          path="/lawyer"
+          element={<CampaignLawFirms />}
+        />
+
+        <Route
+          path="/plumber"
+          element={<CampaignPlumbers />}
+        />
+
+        <Route
+          path="/roofer"
+          element={<CampaignRoofers />}
+        />
+
+        <Route
+          path="/dental"
+          element={<CampaignDental />}
+        />
+
+        {/* Service pages */}
+        <Route
+          path="/services/:slug"
+          element={<ServicePage />}
+        />
+
+        {/* Blog pages — CMS only */}
         <Route path="/blog" element={<BlogList />} />
-        <Route path="/blog/:slug" element={<BlogPost />} />
+
+        <Route
+          path="/blog/:slug"
+          element={<BlogPost />}
+        />
       </Routes>
+
       <Footer />
     </>
   );

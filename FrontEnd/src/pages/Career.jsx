@@ -1,8 +1,32 @@
 import { useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { useGlobal, mediaUrl } from "../hooks/useCMS";
 import career from "../assets/career.png";
 
+const DEFAULT_WHY = [
+  { title: "Growth & Learning", text: "We provide continuous opportunities to learn and grow in your career." },
+  { title: "Collaborative Culture", text: "Work with a supportive team that values innovation and teamwork." },
+  { title: "Impactful Work", text: "Be part of meaningful projects that create real-world impact." },
+];
+
+const DEFAULT_STEPS = [
+  { title: "Application Review", text: "We carefully evaluate your submitted resume, portfolio, and cover letter to understand your qualifications and how they align with our needs." },
+  { title: "Preliminary Interview", text: "This initial conversation is an opportunity for you to share your experience and career goals while learning about our team and company culture." },
+  { title: "Skills Assessment", text: "Depending on the role, you may be asked to complete a task or assessment. This allows us to gauge your technical skills, problem-solving abilities, and creativity." },
+  { title: "Final Round", text: "Meet with key team members for an in-depth discussion about the role, expectations, and how your unique perspective can contribute to our success. It’s also your chance to ask questions and ensure this is the right fit for you." },
+];
+
+const DEFAULT_EMAILS = ["marketing@growthshark.io", "diptesh@growthshark.io"];
+
 export default function Career() {
+  const { data } = useGlobal("career-page");
+  const c = data || {};
+
+  const why = c.why?.items?.length ? c.why.items : DEFAULT_WHY;
+  const steps = c.process?.steps?.length ? c.process.steps : DEFAULT_STEPS;
+  const emails = c.contact?.emails?.length
+    ? c.contact.emails.map((e) => e.email).filter(Boolean)
+    : DEFAULT_EMAILS;
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -12,7 +36,7 @@ export default function Career() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [status, setStatus] = useState(""); // Add a state for status messages
+  const [status, setStatus] = useState("");
 
   function handleChange(e) {
     const { name, value, files } = e.target;
@@ -25,29 +49,27 @@ export default function Career() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setStatus(""); // Clear any previous status message
+    setStatus("");
 
     if (!formData.resume) {
       setStatus("Error: Please upload your resume.");
       return;
     }
 
-    const data = new FormData();
-    data.append("name", formData.name);
-    data.append("email", formData.email);
-    data.append("countryCode", formData.countryCode);
-    data.append("whatsapp", formData.whatsapp);
-    data.append("resume", formData.resume);
+    const body = new FormData();
+    body.append("name", formData.name);
+    body.append("email", formData.email);
+    body.append("countryCode", formData.countryCode);
+    body.append("whatsapp", formData.whatsapp);
+    body.append("resume", formData.resume);
 
     setIsSubmitting(true);
     setStatus("Submitting...");
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/career`, { 
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/career`, {
         method: "POST",
-        body: data,
-        // No Content-Type header is needed for FormData,
-        // as the browser will set it to multipart/form-data with the correct boundary
+        body,
       });
 
       const result = await res.json();
@@ -75,22 +97,23 @@ export default function Career() {
 
   return (
     <div className="bg-gradient-to-r from-black via-[#0b223f] to-[#06263f] text-white">
-      <Helmet>
-        <title>Explore Exciting Career Opportunities & Grow Your Skills at GrowthShark</title>
-        <meta name="description" content="Discover exciting roles where your talent can shine. Join GrowthShark and take the next step toward a successful career. Apply now." />
-      </Helmet>
       <div className="px-6">
         {/* Hero Section */}
         <section className="max-w-6xl mx-auto pt-32 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           <div className="text-center lg:text-left mx-auto lg:mx-0">
             <h1 className="lg:text-6xl text-4xl  font-extrabold leading-tight mb-6">
-              Join <span className="text-sky-400">GrowthShark</span>
+              {c.hero?.titleStart || "Join"}{" "}
+              <span className="text-sky-400">{c.hero?.titleHighlight || "GrowthShark"}</span>
             </h1>
             <p className="text-lg text-gray-300 mb-8">
-              Shape the future with us! Explore exciting opportunities and grow your career with a team
-              that values innovation, collaboration, and excellence.
+              {c.hero?.text ||
+                "Shape the future with us! Explore exciting opportunities and grow your career with a team that values innovation, collaboration, and excellence."}
             </p>
-            <img src={career} alt="career" className="w-64 md:w-80 drop-shadow-lg mx-auto lg:mx-0" />
+            <img
+              src={c.hero?.image ? mediaUrl(c.hero.image) : career}
+              alt="career"
+              className="w-64 md:w-80 drop-shadow-lg mx-auto lg:mx-0"
+            />
           </div>
 
           {/* Form Section */}
@@ -98,9 +121,11 @@ export default function Career() {
             onSubmit={handleSubmit}
             className="bg-[#71b5f0] backdrop-blur-lg rounded-2xl p-8 shadow-xl border border-white/10 text-gray-900"
           >
-            <h2 className="text-3xl font-semibold mb-2 text-black">Application Form</h2>
+            <h2 className="text-3xl font-semibold mb-2 text-black">
+              {c.form?.title || "Application Form"}
+            </h2>
             <p className="text-gray-900 mb-6">
-              Fill in your details and we’ll get back to you soon.
+              {c.form?.subtitle || "Fill in your details and we’ll get back to you soon."}
             </p>
 
             <div className="space-y-4">
@@ -187,7 +212,7 @@ export default function Career() {
               disabled={isSubmitting}
               className="mt-6 w-full bg-lime-400  shadow-lg shadow-black/50 hover:brightness-110  text-black font-semibold py-3 rounded-lg transition cursor-pointer"
             >
-              {isSubmitting ? "Submitting..." : "Submit Application"}
+              {isSubmitting ? "Submitting..." : c.form?.buttonText || "Submit Application"}
             </button>
             {status && <p className="text-center mt-4 text-sm">{status}</p>}
           </form>
@@ -195,14 +220,13 @@ export default function Career() {
 
         {/* Benefits Section */}
         <section className="max-w-6xl mx-auto py-16">
-          <h2 className="text-4xl font-bold mb-6 text-center">Why Join Us?</h2>
+          <h2 className="text-4xl font-bold mb-6 text-center">{c.why?.heading || "Why Join Us?"}</h2>
           <div className="grid md:grid-cols-3 gap-8 mt-10">
-            {[
-              { title: "Growth & Learning", text: "We provide continuous opportunities to learn and grow in your career." },
-              { title: "Collaborative Culture", text: "Work with a supportive team that values innovation and teamwork." },
-              { title: "Impactful Work", text: "Be part of meaningful projects that create real-world impact." },
-            ].map((benefit, idx) => (
-              <div key={idx} className="bg-gradient-to-br from-[#0b223f]/60 to-[#06263f]/40 p-6 rounded-2xl shadow-lg border border-white/10 backdrop-blur-sm hover:shadow-sky-500/40 hover:scale-[1.02] transition-all duration-300">
+            {why.map((benefit, idx) => (
+              <div
+                key={idx}
+                className="bg-gradient-to-br from-[#0b223f]/60 to-[#06263f]/40 p-6 rounded-2xl shadow-lg border border-white/10 backdrop-blur-sm hover:shadow-sky-500/40 hover:scale-[1.02] transition-all duration-300"
+              >
                 <h3 className="text-2xl font-semibold mb-2">{benefit.title}</h3>
                 <p className="text-gray-300 ">{benefit.text}</p>
               </div>
@@ -212,17 +236,14 @@ export default function Career() {
 
         {/* Interview Process */}
         <section className="max-w-6xl mx-auto py-6">
-          <h3 className="text-4xl font-bold mb-3 text-center">Interview Process</h3>
-          <p className="text-center mb-10 text-gray-400">At GrowthShark, we aim to make the hiring journey smooth and transparent. Here’s a detailed breakdown of our process:</p>
+          <h2 className="text-4xl font-bold mb-3 text-center">{c.process?.heading || "Interview Process"}</h2>
+          <p className="text-center mb-10 text-gray-400">
+            {c.process?.intro ||
+              "At GrowthShark, we aim to make the hiring journey smooth and transparent. Here’s a detailed breakdown of our process:"}
+          </p>
 
-          {/* First 4 cards */}
           <div className="grid md:grid-cols-2 gap-8 mb-8">
-            {[
-              { title: "Application Review", text: "We carefully evaluate your submitted resume, portfolio, and cover letter to understand your qualifications and how they align with our needs." },
-              { title: "Preliminary Interview", text: "This initial conversation is an opportunity for you to share your experience and career goals while learning about our team and company culture." },
-              { title: "Skills Assessment", text: "Depending on the role, you may be asked to complete a task or assessment. This allows us to gauge your technical skills, problem-solving abilities, and creativity." },
-              { title: "Final Round", text: "Meet with key team members for an in-depth discussion about the role, expectations, and how your unique perspective can contribute to our success. It’s also your chance to ask questions and ensure this is the right fit for you." },
-            ].map((step, idx) => (
+            {steps.map((step, idx) => (
               <div
                 key={idx}
                 className="bg-gradient-to-br from-[#0b223f]/70 to-[#06263f]/50 border border-white/10 rounded-xl p-6 text-center hover:scale-105 transition shadow-lg backdrop-blur"
@@ -236,10 +257,10 @@ export default function Career() {
           {/* Centered Offer Stage card */}
           <div className="flex justify-center">
             <div className="bg-gradient-to-br from-[#0b223f]/70 to-[#06263f]/50 border border-white/10 rounded-xl p-6 text-center hover:scale-105 transition shadow-lg backdrop-blur w-full md:w-1/2 lg:w-1/2">
-              <h4 className="text-2xl font-semibold mb-2">Offer Stage</h4>
+              <h4 className="text-2xl font-semibold mb-2">{c.process?.offerTitle || "Offer Stage"}</h4>
               <p className="text-gray-400">
-                If selected, we’ll provide a detailed offer letter outlining compensation, benefits, and next steps.
-                Join us at GrowthShark and be part of something exciting!
+                {c.process?.offerText ||
+                  "If selected, we’ll provide a detailed offer letter outlining compensation, benefits, and next steps. Join us at GrowthShark and be part of something exciting!"}
               </p>
             </div>
           </div>
@@ -247,20 +268,18 @@ export default function Career() {
 
         {/* Contact Section */}
         <section className="max-w-6xl mx-auto px-6 py-12 text-center">
-          <h3 className="text-3xl font-semibold mb-4">Get in Touch</h3>
-          <p className="text-gray-300 mb-2">Have questions? We're here to help.</p>
+          <h3 className="text-3xl font-semibold mb-4">{c.contact?.heading || "Get in Touch"}</h3>
+          <p className="text-gray-300 mb-2">{c.contact?.intro || "Have questions? We're here to help."}</p>
           <p>
-            <strong>Call:</strong> +91 8348296083
+            <strong>Call:</strong> {c.contact?.phone || "+91 8348296083"}
           </p>
           <p>
             <strong>Email:</strong>{" "}
-            <a href="mailto:marketing@grothshark.io" className="text-sky-400 underline">
-              marketing@grothshark.io
-            </a>
-            <br/> {" "}
-              <a href="mailto:diptesh@growthshark.io" className="text-sky-400 underline">
-              diptesh@growthshark.io
-            </a>
+            {emails.map((em) => (
+              <a key={em} href={`mailto:${em}`} className="text-sky-400 underline block">
+                {em}
+              </a>
+            ))}
           </p>
         </section>
       </div>

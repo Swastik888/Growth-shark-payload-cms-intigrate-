@@ -4,6 +4,7 @@ import { Autoplay, FreeMode } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/autoplay';
 import 'swiper/css/free-mode';
+import { useGlobal, mediaUrl } from '../../hooks/useCMS';
 import img4 from '..//../assets/4.png';
 import img5 from '..//../assets/5.png';
 import img6 from '..//../assets/6.png';
@@ -19,31 +20,91 @@ import Rise_hydroponics from '..//../assets/Rise_hydroponics.png';
 import rentpost from '..//../assets/rentpost.png';
 import quodeck from '..//../assets/quodeck.png';
 
-const logos = [
-  tempcon,
-  Solinas,
-  sofyrus,
-  Sidepath,
-  Scoop,
-  S_IB,
-  roshni_sanghvi,
-  Rise_hydroponics,
-  rentpost,
-  quodeck,
+// ---------- fallbacks (used while the CMS is empty or unreachable) ----------
+const DEFAULT_LOGOS = [
+  tempcon, Solinas, sofyrus, Sidepath, Scoop,
+  S_IB, roshni_sanghvi, Rise_hydroponics, rentpost, quodeck,
+];
+
+const DEFAULT_SERVICES = [
+  'Email Gatekeeping',
+  'Calendar Coordination',
+  'Call Gatekeeping',
+  'Market Research',
+  'Client Intelligence',
+  'Social Media Management',
+  'Manual Outreach',
+  'Document Preparation',
+  'Task Delegation',
+];
+
+const DEFAULT_REVENUE = ['Less than $5,000', '$5,000-$10,000', 'More than $10,000'];
+
+const DEFAULT_CARDS = [
+  {
+    image: img4,
+    title: 'Strategic Insights',
+    description: 'Explore data-driven perspectives to navigate competitive landscapes effectively.',
+  },
+  {
+    image: img5,
+    title: 'Innovative Strategies',
+    description: 'Unlock unconventional methods to achieve high-growth outcomes.',
+  },
+  {
+    image: img6,
+    title: 'Personalized Tactics',
+    description: 'Customize your execution playbook based on industry and user behavior.',
+  },
 ];
 
 const AboutSection = () => {
+  // ---------- CMS data ----------
+  const { data } = useGlobal('home');
+  const form = data?.stealthPartnerForm;
+  const logosCms = data?.stealthLogos;
+  const formula = data?.stealthFormula;
 
-  //Aboutform connect to backend
+  const serviceOptions = form?.serviceOptions?.length
+    ? form.serviceOptions.map((o) => o.label)
+    : DEFAULT_SERVICES;
 
+  const revenueOptions = form?.revenueOptions?.length
+    ? form.revenueOptions.map((o) => o.label)
+    : DEFAULT_REVENUE;
+
+  const cmsLogos = (logosCms?.logos || [])
+    .map((l) => ({ src: mediaUrl(l.image), name: l.name }))
+    .filter((l) => l.src);
+
+
+  const logoList = cmsLogos.length
+    ? cmsLogos
+    : DEFAULT_LOGOS.map((src) => ({ src, name: '' }));
+
+  // Only scroll when there are enough logos; otherwise show them in a static row
+  const canScroll = logoList.length >= 4;
+  const repeatCount = Math.max(1, Math.ceil(12 / logoList.length));
+  const slides = Array.from({ length: repeatCount }, () => logoList).flat();
+
+  const cards = formula?.cards?.length
+    ? formula.cards.map((c, i) => ({
+      image: mediaUrl(c.image) ?? DEFAULT_CARDS[i]?.image,
+      title: c.title,
+      description: c.description,
+    }))
+    : DEFAULT_CARDS;
+
+  // ---------- form connected to backend ----------
+  // service / revenue stay empty until the user changes them, then the first option is used
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     contact: "",
     website: "",
-    service: "Email Gatekeeping",
+    service: "",
     requirement: "",
-    revenue: "Less than $5,000",
+    revenue: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -58,14 +119,20 @@ const AboutSection = () => {
     setLoading(true);
     setMessage("");
 
+    const payload = {
+      ...formData,
+      service: formData.service || serviceOptions[0],
+      revenue: formData.revenue || revenueOptions[0],
+    };
+
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/aboutus`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const result = await res.json();
       if (res.ok) {
         setMessage("Form submitted successfully!");
         setFormData({
@@ -73,12 +140,12 @@ const AboutSection = () => {
           email: "",
           contact: "",
           website: "",
-          service: "Email Gatekeeping",
+          service: "",
           requirement: "",
-          revenue: "Less than $5,000",
+          revenue: "",
         });
       } else {
-        setMessage(`${data.message}`);
+        setMessage(`${result.message}`);
       }
     } catch (error) {
       setMessage("Failed to submit. Please try again.");
@@ -87,19 +154,19 @@ const AboutSection = () => {
     }
   };
 
-
   return (
     <section className="text-white px-6 py-6 overflow-hidden">
       {/* Header + Form */}
       <div className="max-w-6xl mx-auto flex gap-8 relative z-10 flex-col lg:flex-row">
         <div className="lg:w-1/2 space-y-4 text-center lg:text-left">
           <h1 className="text-4xl font-bold mb-4">
-            Before You Hunt, Get <br /> In <span className="text-[#74c0f4]">Stealth Mode</span>
+            {form?.headingBefore ?? 'Before You Hunt, Get In'}{' '}
+            <span className="text-[#74c0f4]">{form?.headingHighlight ?? 'Stealth Mode'}</span>
+            {form?.headingAfter ? ` ${form.headingAfter}` : ''}
           </h1>
           <p className="text-gray-300">
-            Successful companies never hunt blind— they organize, <br /> strategize, and delegate
-            with precision. Our Executive <br /> Assistants streamline your operations
-            behind-the-scenes, <br /> prepping you for the perfect strike.
+            {form?.description ??
+              'Successful companies never hunt blind— they organize, strategize, and delegate with precision. Our Executive Assistants streamline your operations behind-the-scenes, prepping you for the perfect strike.'}
           </p>
         </div>
         <div className="lg:w-1/2">
@@ -140,21 +207,14 @@ const AboutSection = () => {
                 <label className="block mb-1 text-sm text-black">Service you're interested in:</label>
                 <select
                   name="service"
-                  value={formData.service}
+                  value={formData.service || serviceOptions[0]}
                   onChange={handleChange}
                   className="w-full p-3 rounded bg-gray-800 text-white">
-                  <option>Email Gatekeeping</option>
-                  <option>Calendar Coordination</option>
-                  <option>Call Gatekeeping</option>
-                  <option>Market Research</option>
-                  <option>Client Intelligence</option>
-                  <option>Social Media Management</option>
-                  <option>Manual Outreach</option>
-                  <option>Document Preparation</option>
-                  <option>Task Delegation</option>
+                  {serviceOptions.map((option) => (
+                    <option key={option}>{option}</option>
+                  ))}
                 </select>
               </div>
-
 
               <textarea
                 name="requirement"
@@ -171,12 +231,12 @@ const AboutSection = () => {
                 </label>
                 <select
                   name="revenue"
-                  value={formData.revenue}
+                  value={formData.revenue || revenueOptions[0]}
                   onChange={handleChange}
                   className="w-full p-3 rounded bg-gray-800 text-white">
-                  <option>Less than $5,000</option>
-                  <option>$5,000-$10,000</option>
-                  <option>More than $10,000</option>
+                  {revenueOptions.map((option) => (
+                    <option key={option}>{option}</option>
+                  ))}
                 </select>
               </div>
 
@@ -185,7 +245,7 @@ const AboutSection = () => {
                   type="submit"
                   disabled={loading}
                   className="py-2 px-6 bg-lime-400   text-black font-semibold rounded-full duration-300 cursor-pointer shadow-lg shadow-black/50 hover:brightness-110 transition">
-                  {loading ? "Submitting..." : "Submit"}
+                  {loading ? "Submitting..." : (form?.submitText ?? "Submit")}
                 </button>
               </div>
 
@@ -199,52 +259,70 @@ const AboutSection = () => {
 
       {/* Auto Slider for Logos */}
       <div className="mt-30 relative z-10">
-        <h2 className="text-4xl font-bold mb-6 text-center text-[#2ea9ff]">Those Who Hunted With Us</h2>
+        <h2 className="text-4xl font-bold mb-6 text-center text-[#2ea9ff]">
+          {logosCms?.heading ?? 'Those Who Hunted With Us'}
+        </h2>
 
         {/* Side Blur */}
         <div className="hidden lg:block pointer-events-none absolute top-0 left-0 h-full w-34  bg-gradient-to-r from-[#0b223f] to-transparent z-20 "></div>
         <div className="hidden lg:block pointer-events-none absolute top-0 right-0 h-full w-34 bg-gradient-to-l from-[#0b223f] to-transparent z-20 "></div>
-        <Swiper
-          slidesPerView="auto"
-          spaceBetween={60}
-          loop={true}
-          centeredSlides={false}
-          speed={1000} // Adjust for faster/slower motion (8000 = smooth & calm)
-          allowTouchMove={false}
-          freeMode={{ enabled: false }}
-          autoplay={{
-            delay: 0,
-            disableOnInteraction: false,
-            pauseOnMouseEnter: true, // Optional: pauses when hovering the slider
-          }}
-          modules={[Autoplay]}
-          className="swiper-logos"
-        >
-          {/* Duplicate logos multiple times for perfect seamless loop */}
-          {[...logos, ...logos, ...logos, ...logos, ...logos, ...logos].map((logo, i) => (
-            <SwiperSlide
-              key={i}
-              className="!w-auto px-4 py-8 transition-all duration-500"
-            >
-              <div className="group relative">
+
+        {canScroll ? (
+          <Swiper
+            key={logoList.length}
+            slidesPerView="auto"
+            spaceBetween={60}
+            loop={true}
+            centeredSlides={false}
+            speed={1000}
+            allowTouchMove={false}
+            freeMode={{ enabled: false }}
+            autoplay={{
+              delay: 0,
+              disableOnInteraction: false,
+              pauseOnMouseEnter: true,
+            }}
+            modules={[Autoplay]}
+            className="swiper-logos"
+          >
+            {slides.map((logo, i) => (
+              <SwiperSlide
+                key={i}
+                className="!w-auto px-4 py-8 transition-all duration-500"
+              >
+                <div className="group relative">
+                  <img
+                    src={logo.src}
+                    alt={logo.name || `Partner logo ${i + 1}`}
+                    className="
+                h-14 w-auto mx-auto
+                opacity-50 grayscale 
+                transition-all duration-700 ease-out
+                group-hover:opacity-100 group-hover:grayscale-0 
+                group-hover:scale-125
+                group-hover:-translate-y-4
+                drop-shadow-lg
+                filter hover:drop-shadow-2xl
+              "
+                  />
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        ) : (
+          <div className="flex flex-wrap items-center justify-center gap-12 py-8">
+            {logoList.map((logo, i) => (
+              <div key={i} className="group relative">
                 <img
-                  src={logo}
-                  alt={`Partner logo ${i + 1}`}
-                  className="
-              h-14 w-auto mx-auto
-              opacity-50 grayscale 
-              transition-all duration-700 ease-out
-              group-hover:opacity-100 group-hover:grayscale-0 
-              group-hover:scale-125
-              group-hover:-translate-y-4
-              drop-shadow-lg
-              filter hover:drop-shadow-2xl
-            "
+                  src={logo.src}
+                  alt={logo.name || `Partner logo ${i + 1}`}
+                  className="h-14 w-auto mx-auto opacity-50 grayscale transition-all duration-700 ease-out group-hover:opacity-100 group-hover:grayscale-0 group-hover:scale-125 drop-shadow-lg"
                 />
               </div>
-            </SwiperSlide>
-          ))}
-        </Swiper>
+            ))}
+          </div>
+        )}
+
         <style>{`
     @keyframes float {
       0%, 100% { transform: translateY(0px); }
@@ -256,59 +334,30 @@ const AboutSection = () => {
   `}</style>
       </div>
 
-      {/* Cards Section */}
       {/* Cards Section Heading */}
       <div className="text-center max-w-6xl mx-auto mt-20 mb-20 ">
         <h2 className="text-4xl md:text-5xl font-bold text-white leading-tight">
-          The <span className="text-[#49b9ff]">Stealth Formula</span> Of Ours,
-          <br /> Is Based On
+          {formula?.headingBefore ?? 'The'}{' '}
+          <span className="text-[#49b9ff]">{formula?.headingHighlight ?? 'Stealth Formula'}</span>{' '}
+          {formula?.headingAfter ?? 'Of Ours, Is Based On'}
         </h2>
       </div>
 
-
       {/* Cards Grid */}
       <div className="relative  flex flex-col lg:flex-row items-center justify-between gap-10 max-w-6xl mx-auto mb-10">
-
-        {/* Card 1 */}
-        <div
-          className="w-full max-w-xs h-[350px] rounded-2xl shadow-lg bg-cover bg-center flex items-end p-6"
-          style={{ backgroundImage: `url(${img4})` }}
-        >
-          <div className="w-full bg-white/20 backdrop-blur-md p-5 rounded-xl border border-white/30">
-            <h3 className="text-xl font-semibold text-[#2ea9ff] mb-2">Strategic Insights</h3>
-            <p className="text-sm font-medium text-black">
-              Explore data-driven perspectives to navigate competitive landscapes effectively.
-            </p>
+        {cards.map((card, i) => (
+          <div
+            key={i}
+            className="w-full max-w-xs h-[350px] rounded-2xl shadow-lg bg-cover bg-center flex items-end p-6"
+            style={{ backgroundImage: card.image ? `url("${card.image}")` : undefined }}
+          >
+            <div className="w-full bg-white/20 backdrop-blur-md p-5 rounded-xl border border-white/30">
+              <h3 className="text-xl font-semibold text-[#2ea9ff] mb-2">{card.title}</h3>
+              <p className="text-sm font-medium text-black">{card.description}</p>
+            </div>
           </div>
-        </div>
-
-        {/* Card 2 */}
-        <div
-          className="w-full max-w-xs h-[350px] rounded-2xl shadow-lg bg-cover bg-center flex items-end p-6"
-          style={{ backgroundImage: `url(${img5})` }}
-        >
-          <div className="w-full bg-white/20 backdrop-blur-md p-5 rounded-xl border border-white/30">
-            <h3 className="text-xl font-semibold text-[#2ea9ff] mb-2">Innovative Strategies</h3>
-            <p className="text-sm font-medium text-black">
-              Unlock unconventional methods to achieve high-growth outcomes.
-            </p>
-          </div>
-        </div>
-
-        {/* Card 3 */}
-        <div
-          className="w-full max-w-xs h-[350px] rounded-2xl shadow-lg bg-cover bg-center flex items-end p-6"
-          style={{ backgroundImage: `url(${img6})` }}
-        >
-          <div className="w-full bg-white/20 backdrop-blur-md p-5 rounded-xl border border-white/30">
-            <h3 className="text-xl font-semibold text-[#2ea9ff] mb-2">Personalized Tactics</h3>
-            <p className="text-sm font-medium text-black">
-              Customize your execution playbook based on industry and user behavior.
-            </p>
-          </div>
-        </div>
+        ))}
       </div>
-
     </section>
   );
 };

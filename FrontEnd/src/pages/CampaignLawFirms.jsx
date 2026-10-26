@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Helmet } from "react-helmet-async";
+// import { Helmet } from "react-helmet-async";
 import { FaPlay, FaPause } from "react-icons/fa"; // Imported Play/Pause Icons
 import { FaBullseye, FaShieldAlt, FaChartLine, FaBalanceScale, FaGavel, FaSearchDollar } from "react-icons/fa";
 import { FaUserCheck } from "react-icons/fa6";
@@ -77,7 +77,7 @@ export default function CampaignLawFirms() {
     <div className="bg-black text-white min-h-screen font-sans selection:bg-lime-400 selection:text-black">
 
       {/* ---------------- HEAD / CLARITY SCRIPT ---------------- */}
-      <Helmet>
+      {/* <Helmet>
 
         <script type="text/javascript">
           {`
@@ -88,7 +88,7 @@ export default function CampaignLawFirms() {
             })(window, document, "clarity", "script", "ujciv7yv6q");
           `}
         </script>
-      </Helmet>
+      </Helmet> */}
       {/* -------------------------------------------------------- */}
 
       <div className="relative overflow-hidden">

@@ -72,6 +72,9 @@ export interface Config {
     media: Media;
     categories: Category;
     users: User;
+    portfolio: Portfolio;
+    services: Service;
+    blogs: Blog;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -94,6 +97,9 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    portfolio: PortfolioSelect<false> | PortfolioSelect<true>;
+    services: ServicesSelect<false> | ServicesSelect<true>;
+    blogs: BlogsSelect<false> | BlogsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -113,11 +119,19 @@ export interface Config {
     header: Header;
     footer: Footer;
     home: Home;
+    seo: Seo;
+    'career-page': CareerPage;
+    'about-page': AboutPage;
+    'contact-page': ContactPage;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
     home: HomeSelect<false> | HomeSelect<true>;
+    seo: SeoSelect<false> | SeoSelect<true>;
+    'career-page': CareerPageSelect<false> | CareerPageSelect<true>;
+    'about-page': AboutPageSelect<false> | AboutPageSelect<true>;
+    'contact-page': ContactPageSelect<false> | ContactPageSelect<true>;
   };
   locale: null;
   widgets: {
@@ -777,6 +791,212 @@ export interface Form {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "portfolio".
+ */
+export interface Portfolio {
+  id: string;
+  title: string;
+  slug: 'cb2b' | 'ocs' | 'pms' | 'smm1' | 'smm2';
+  category?: string | null;
+  thumbnail: string | Media;
+  sections?:
+    | {
+        sectionTitle?: string | null;
+        layoutStyle?: ('darkBox' | 'highlightBox' | 'centered') | null;
+        sectionImage?: (string | null) | Media;
+        richContent?: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        } | null;
+        id?: string | null;
+      }[]
+    | null;
+  seo?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (string | null) | Media;
+    keywords?: string | null;
+    noIndex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services".
+ */
+export interface Service {
+  id: string;
+  title: string;
+  /**
+   * Pick the service page this entry controls
+   */
+  slug:
+    | 'b2b-seo-service'
+    | 'blog-writing-service'
+    | 'community-management'
+    | 'content-creation-services'
+    | 'copywriting-services'
+    | 'ecommerce-seo-services'
+    | 'email-marketing-services'
+    | 'facebook-marketing'
+    | 'insta-marketing'
+    | 'social-listening'
+    | 'video-editing-service';
+  hero?: {
+    titleStart?: string | null;
+    titleHighlight?: string | null;
+    titleEnd?: string | null;
+    subheading?: string | null;
+    /**
+     * Use **text** for bold
+     */
+    intro?: string | null;
+  };
+  whatIs?: {
+    heading?: string | null;
+    text?: string | null;
+    factsTitle?: string | null;
+    facts?:
+      | {
+          text: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  approach?: {
+    heading?: string | null;
+    cards?:
+      | {
+          title: string;
+          text?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  different?: {
+    titleStart?: string | null;
+    titleHighlight?: string | null;
+    titleEnd?: string | null;
+    points?:
+      | {
+          text: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  whyAds?: {
+    heading?: string | null;
+    intro?: string | null;
+    points?:
+      | {
+          text: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  faq?: {
+    heading?: string | null;
+    items?:
+      | {
+          question: string;
+          answer?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  results?: {
+    heading?: string | null;
+    text?: string | null;
+  };
+  cta?: {
+    heading?: string | null;
+    text?: string | null;
+    buttonText?: string | null;
+    buttonLink?: string | null;
+  };
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    image?: (string | null) | Media;
+    keywords?: string | null;
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "blogs".
+ */
+export interface Blog {
+  id: string;
+  title: string;
+  /**
+   * Leave empty to generate it from the title. To replace an old blog, type its old slug exactly (e.g. seo-services-to-improve-google-ranking).
+   */
+  slug?: string | null;
+  category?: string | null;
+  thumbnail: string | Media;
+  /**
+   * Optional. If empty, the first paragraph of the article is used.
+   */
+  excerpt?: string | null;
+  /**
+   * Order: Heading -> Box Theme -> Banner Image -> Rich Text Editor
+   */
+  sections?:
+    | {
+        sectionTitle?: string | null;
+        layoutStyle?: ('plain' | 'darkBox' | 'highlightBox' | 'centered') | null;
+        sectionImage?: (string | null) | Media;
+        richContent?: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        } | null;
+        id?: string | null;
+      }[]
+    | null;
+  seo?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (string | null) | Media;
+    keywords?: string | null;
+    noIndex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -984,6 +1204,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'users';
         value: string | User;
+      } | null)
+    | ({
+        relationTo: 'portfolio';
+        value: string | Portfolio;
+      } | null)
+    | ({
+        relationTo: 'services';
+        value: string | Service;
+      } | null)
+    | ({
+        relationTo: 'blogs';
+        value: string | Blog;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1353,6 +1585,171 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "portfolio_select".
+ */
+export interface PortfolioSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  category?: T;
+  thumbnail?: T;
+  sections?:
+    | T
+    | {
+        sectionTitle?: T;
+        layoutStyle?: T;
+        sectionImage?: T;
+        richContent?: T;
+        id?: T;
+      };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        keywords?: T;
+        noIndex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services_select".
+ */
+export interface ServicesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  hero?:
+    | T
+    | {
+        titleStart?: T;
+        titleHighlight?: T;
+        titleEnd?: T;
+        subheading?: T;
+        intro?: T;
+      };
+  whatIs?:
+    | T
+    | {
+        heading?: T;
+        text?: T;
+        factsTitle?: T;
+        facts?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+      };
+  approach?:
+    | T
+    | {
+        heading?: T;
+        cards?:
+          | T
+          | {
+              title?: T;
+              text?: T;
+              id?: T;
+            };
+      };
+  different?:
+    | T
+    | {
+        titleStart?: T;
+        titleHighlight?: T;
+        titleEnd?: T;
+        points?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+      };
+  whyAds?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        points?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+      };
+  faq?:
+    | T
+    | {
+        heading?: T;
+        items?:
+          | T
+          | {
+              question?: T;
+              answer?: T;
+              id?: T;
+            };
+      };
+  results?:
+    | T
+    | {
+        heading?: T;
+        text?: T;
+      };
+  cta?:
+    | T
+    | {
+        heading?: T;
+        text?: T;
+        buttonText?: T;
+        buttonLink?: T;
+      };
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        keywords?: T;
+        noindex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "blogs_select".
+ */
+export interface BlogsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  category?: T;
+  thumbnail?: T;
+  excerpt?: T;
+  sections?:
+    | T
+    | {
+        sectionTitle?: T;
+        layoutStyle?: T;
+        sectionImage?: T;
+        richContent?: T;
+        id?: T;
+      };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        keywords?: T;
+        noIndex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects_select".
  */
 export interface RedirectsSelect<T extends boolean = true> {
@@ -1690,13 +2087,326 @@ export interface Footer {
  */
 export interface Home {
   id: string;
-  hero: {
+  attackMeta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (string | null) | Media;
+    keywords?: string | null;
+    noIndex?: boolean | null;
+  };
+  attackHero: {
     titleWhite: string;
     titleHighlight: string;
     subtitle?: string | null;
     buttonText?: string | null;
     buttonLink?: string | null;
     backgroundImage?: (string | null) | Media;
+  };
+  stealthMeta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (string | null) | Media;
+    keywords?: string | null;
+    noIndex?: boolean | null;
+  };
+  stealthHero: {
+    titleWhite: string;
+    titleHighlight: string;
+    subtitle?: string | null;
+    buttonText?: string | null;
+    buttonLink?: string | null;
+    backgroundImage?: (string | null) | Media;
+  };
+  stealthPartnerForm?: {
+    headingBefore?: string | null;
+    headingHighlight?: string | null;
+    headingAfter?: string | null;
+    description?: string | null;
+    serviceOptions?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    revenueOptions?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    submitText?: string | null;
+  };
+  stealthLogos?: {
+    heading?: string | null;
+    logos?:
+      | {
+          name?: string | null;
+          image?: (string | null) | Media;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  stealthFormula?: {
+    headingBefore?: string | null;
+    headingHighlight?: string | null;
+    headingAfter?: string | null;
+    cards?:
+      | {
+          image?: (string | null) | Media;
+          title?: string | null;
+          description?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  stealthWhy?: {
+    headingBefore?: string | null;
+    headingHighlight?: string | null;
+    headingAfter?: string | null;
+    intro?: string | null;
+    quote?: string | null;
+    afterQuote?: string | null;
+    leftTitle?: string | null;
+    leftItems?:
+      | {
+          text: string;
+          id?: string | null;
+        }[]
+      | null;
+    rightTitle?: string | null;
+    rightItems?:
+      | {
+          text: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  stealthReady?: {
+    headingBefore?: string | null;
+    headingHighlight?: string | null;
+    headingAfter?: string | null;
+    quote?: string | null;
+    text?: string | null;
+    formTitle?: string | null;
+    placeholder?: string | null;
+    buttonText?: string | null;
+  };
+  perfectPartnerGrid?: {
+    headingBefore?: string | null;
+    headingHighlight?: string | null;
+    headingAfter?: string | null;
+    cards?:
+      | {
+          title: string;
+          description?: string | null;
+          icon?: (string | null) | Media;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  transparentFinancials?: {
+    headingBefore?: string | null;
+    headingHighlight?: string | null;
+    headingAfter?: string | null;
+    description?: string | null;
+  };
+  stealthTestimonials?: {
+    items?:
+      | {
+          name: string;
+          role?: string | null;
+          photo?: (string | null) | Media;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "seo".
+ */
+export interface Seo {
+  id: string;
+  defaults?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (string | null) | Media;
+    keywords?: string | null;
+    noIndex?: boolean | null;
+  };
+  /**
+   * One row per page. The path is the page URL, for example /career or /services/blog-writing-service.
+   */
+  pages?:
+    | {
+        path: string;
+        title?: string | null;
+        description?: string | null;
+        /**
+         * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+         */
+        image?: (string | null) | Media;
+        keywords?: string | null;
+        noIndex?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "career-page".
+ */
+export interface CareerPage {
+  id: string;
+  hero?: {
+    titleStart?: string | null;
+    titleHighlight?: string | null;
+    text?: string | null;
+    image?: (string | null) | Media;
+  };
+  form?: {
+    title?: string | null;
+    subtitle?: string | null;
+    buttonText?: string | null;
+  };
+  why?: {
+    heading?: string | null;
+    items?:
+      | {
+          title?: string | null;
+          text?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  process?: {
+    heading?: string | null;
+    intro?: string | null;
+    steps?:
+      | {
+          title?: string | null;
+          text?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    offerTitle?: string | null;
+    offerText?: string | null;
+  };
+  contact?: {
+    heading?: string | null;
+    intro?: string | null;
+    phone?: string | null;
+    emails?:
+      | {
+          email?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "about-page".
+ */
+export interface AboutPage {
+  id: string;
+  story?: {
+    eyebrow?: string | null;
+    heading?: string | null;
+    paragraph1?: string | null;
+    paragraph2?: string | null;
+    paragraph3?: string | null;
+  };
+  gallery?: {
+    images?:
+      | {
+          image: string | Media;
+          alt?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    autoplay?: boolean | null;
+    /**
+     * Milliseconds per slide
+     */
+    autoplayDelay?: number | null;
+  };
+  stats?:
+    | {
+        value: number;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  cta?: {
+    heading?: string | null;
+    buttonText?: string | null;
+    buttonLink?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-page".
+ */
+export interface ContactPage {
+  id: string;
+  heading?: {
+    eyebrow?: string | null;
+    title?: string | null;
+  };
+  info?: {
+    emails?:
+      | {
+          email: string;
+          id?: string | null;
+        }[]
+      | null;
+    phones?:
+      | {
+          phone: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  form?: {
+    namePlaceholder?: string | null;
+    emailPlaceholder?: string | null;
+    messagePlaceholder?: string | null;
+    disclaimer?: string | null;
+    buttonText?: string | null;
+  };
+  map?: {
+    show?: boolean | null;
+    mode?: ('address' | 'embed') | null;
+    /**
+     * e.g. Bardhaman, West Bengal
+     */
+    address?: string | null;
+    mapType?: ('roadmap' | 'satellite') | null;
+    zoom?: number | null;
+    /**
+     * Google Maps → Share → Embed a map → paste the link or the whole <iframe> code
+     */
+    embedLink?: string | null;
+    height?: number | null;
+    title?: string | null;
   };
   updatedAt?: string | null;
   createdAt?: string | null;
@@ -1752,7 +2462,16 @@ export interface FooterSelect<T extends boolean = true> {
  * via the `definition` "home_select".
  */
 export interface HomeSelect<T extends boolean = true> {
-  hero?:
+  attackMeta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        keywords?: T;
+        noIndex?: T;
+      };
+  attackHero?:
     | T
     | {
         titleWhite?: T;
@@ -1761,6 +2480,334 @@ export interface HomeSelect<T extends boolean = true> {
         buttonText?: T;
         buttonLink?: T;
         backgroundImage?: T;
+      };
+  stealthMeta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        keywords?: T;
+        noIndex?: T;
+      };
+  stealthHero?:
+    | T
+    | {
+        titleWhite?: T;
+        titleHighlight?: T;
+        subtitle?: T;
+        buttonText?: T;
+        buttonLink?: T;
+        backgroundImage?: T;
+      };
+  stealthPartnerForm?:
+    | T
+    | {
+        headingBefore?: T;
+        headingHighlight?: T;
+        headingAfter?: T;
+        description?: T;
+        serviceOptions?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        revenueOptions?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        submitText?: T;
+      };
+  stealthLogos?:
+    | T
+    | {
+        heading?: T;
+        logos?:
+          | T
+          | {
+              name?: T;
+              image?: T;
+              id?: T;
+            };
+      };
+  stealthFormula?:
+    | T
+    | {
+        headingBefore?: T;
+        headingHighlight?: T;
+        headingAfter?: T;
+        cards?:
+          | T
+          | {
+              image?: T;
+              title?: T;
+              description?: T;
+              id?: T;
+            };
+      };
+  stealthWhy?:
+    | T
+    | {
+        headingBefore?: T;
+        headingHighlight?: T;
+        headingAfter?: T;
+        intro?: T;
+        quote?: T;
+        afterQuote?: T;
+        leftTitle?: T;
+        leftItems?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+        rightTitle?: T;
+        rightItems?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+      };
+  stealthReady?:
+    | T
+    | {
+        headingBefore?: T;
+        headingHighlight?: T;
+        headingAfter?: T;
+        quote?: T;
+        text?: T;
+        formTitle?: T;
+        placeholder?: T;
+        buttonText?: T;
+      };
+  perfectPartnerGrid?:
+    | T
+    | {
+        headingBefore?: T;
+        headingHighlight?: T;
+        headingAfter?: T;
+        cards?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              icon?: T;
+              id?: T;
+            };
+      };
+  transparentFinancials?:
+    | T
+    | {
+        headingBefore?: T;
+        headingHighlight?: T;
+        headingAfter?: T;
+        description?: T;
+      };
+  stealthTestimonials?:
+    | T
+    | {
+        items?:
+          | T
+          | {
+              name?: T;
+              role?: T;
+              photo?: T;
+              id?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "seo_select".
+ */
+export interface SeoSelect<T extends boolean = true> {
+  defaults?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        keywords?: T;
+        noIndex?: T;
+      };
+  pages?:
+    | T
+    | {
+        path?: T;
+        title?: T;
+        description?: T;
+        image?: T;
+        keywords?: T;
+        noIndex?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "career-page_select".
+ */
+export interface CareerPageSelect<T extends boolean = true> {
+  hero?:
+    | T
+    | {
+        titleStart?: T;
+        titleHighlight?: T;
+        text?: T;
+        image?: T;
+      };
+  form?:
+    | T
+    | {
+        title?: T;
+        subtitle?: T;
+        buttonText?: T;
+      };
+  why?:
+    | T
+    | {
+        heading?: T;
+        items?:
+          | T
+          | {
+              title?: T;
+              text?: T;
+              id?: T;
+            };
+      };
+  process?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        steps?:
+          | T
+          | {
+              title?: T;
+              text?: T;
+              id?: T;
+            };
+        offerTitle?: T;
+        offerText?: T;
+      };
+  contact?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        phone?: T;
+        emails?:
+          | T
+          | {
+              email?: T;
+              id?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "about-page_select".
+ */
+export interface AboutPageSelect<T extends boolean = true> {
+  story?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        paragraph1?: T;
+        paragraph2?: T;
+        paragraph3?: T;
+      };
+  gallery?:
+    | T
+    | {
+        images?:
+          | T
+          | {
+              image?: T;
+              alt?: T;
+              id?: T;
+            };
+        autoplay?: T;
+        autoplayDelay?: T;
+      };
+  stats?:
+    | T
+    | {
+        value?: T;
+        label?: T;
+        id?: T;
+      };
+  cta?:
+    | T
+    | {
+        heading?: T;
+        buttonText?: T;
+        buttonLink?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-page_select".
+ */
+export interface ContactPageSelect<T extends boolean = true> {
+  heading?:
+    | T
+    | {
+        eyebrow?: T;
+        title?: T;
+      };
+  info?:
+    | T
+    | {
+        emails?:
+          | T
+          | {
+              email?: T;
+              id?: T;
+            };
+        phones?:
+          | T
+          | {
+              phone?: T;
+              id?: T;
+            };
+      };
+  form?:
+    | T
+    | {
+        namePlaceholder?: T;
+        emailPlaceholder?: T;
+        messagePlaceholder?: T;
+        disclaimer?: T;
+        buttonText?: T;
+      };
+  map?:
+    | T
+    | {
+        show?: T;
+        mode?: T;
+        address?: T;
+        mapType?: T;
+        zoom?: T;
+        embedLink?: T;
+        height?: T;
+        title?: T;
       };
   updatedAt?: T;
   createdAt?: T;

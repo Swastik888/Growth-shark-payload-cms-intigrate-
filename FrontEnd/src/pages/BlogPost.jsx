@@ -1,224 +1,382 @@
+
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { Link, useParams } from "react-router-dom";
+import SEO from "../components/SEO";
+import { cmsImg, plainText } from "../components/RichText";
 
-const API =
-  import.meta.env.VITE_PRORITERZ_API || "https://proriterz.com/wp-json/wp/v2";
+const CMS = (import.meta.env.VITE_CMS_URL || "").replace(/\/+$/, "");
 
-// Helper function to fix old Cloudways URLs
-const fixImageUrl = (url) => {
-  if (!url) return "https://via.placeholder.com/800x400?text=Image+Not+Found";
-  return url.replace(
-    "wordpress-1281832-4641891.cloudwaysapps.com",
-    "proriterz.com"
+async function loadPost(slug, signal) {
+  if (!CMS) {
+    throw new Error("VITE_CMS_URL is not configured.");
+  }
+
+  const url = new URL(`${CMS}/api/blogs`);
+  url.searchParams.set("where[slug][equals]", slug);
+  url.searchParams.set("depth", "2");
+  url.searchParams.set("limit", "1");
+
+  const response = await fetch(url.toString(), { signal });
+
+  if (!response.ok) {
+    throw new Error(`CMS request failed: ${response.status}`);
+  }
+
+  const result = await response.json();
+  return result.docs?.[0] || null;
+}
+
+function getBaseUrl() {
+  return (
+    import.meta.env.VITE_BASE_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "")
+  ).replace(/\/+$/, "");
+}
+
+function formatDate(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function renderNode(node, index) {
+  if (!node) return null;
+
+  if (node.type === "text") {
+    let content = node.text || "";
+
+    if (node.format & 1) content = <strong>{content}</strong>;
+    if (node.format & 2) content = <em>{content}</em>;
+    if (node.format & 8) content = <u>{content}</u>;
+    if (node.format & 16) content = <code>{content}</code>;
+
+    return <span key={index}>{content}</span>;
+  }
+
+  const children = (node.children || []).map((child, childIndex) =>
+    renderNode(child, childIndex)
   );
-};
 
-// Convert WordPress HTML excerpts to plain text for meta tags
-const stripHtmlTags = (html) => {
-  if (!html) return "";
-  const withoutTags = html.replace(/<[^>]*>/g, " ");
-  const decoded = withoutTags
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex) =>
-      String.fromCharCode(parseInt(hex, 16))
-    )
-    .replace(/&nbsp;/gi, " ");
-  return decoded.replace(/\s+/g, " ").trim();
-};
+  switch (node.type) {
+    case "root":
+      return <div key={index}>{children}</div>;
 
-// Helper to make links open in a new tab
-const fixLinks = (html) => {
-  if (!html) return "";
-  return html.replaceAll(
-    /<a /g,
-    '<a target="_blank" rel="noopener noreferrer" '
-  );
-};
+    case "paragraph":
+      return (
+        <p key={index} className="mb-5 leading-8 text-gray-200">
+          {children}
+        </p>
+      );
+
+    case "heading": {
+      const tag = /^h[1-6]$/.test(node.tag) ? node.tag : "h2";
+      const className =
+        "mb-4 mt-8 font-bold tracking-tight text-white " +
+        (tag === "h1"
+          ? "text-3xl"
+          : tag === "h2"
+            ? "text-2xl"
+            : "text-xl");
+
+      if (tag === "h1") {
+        return <h1 key={index} className={className}>{children}</h1>;
+      }
+      if (tag === "h3") {
+        return <h3 key={index} className={className}>{children}</h3>;
+      }
+      if (tag === "h4") {
+        return <h4 key={index} className={className}>{children}</h4>;
+      }
+      if (tag === "h5") {
+        return <h5 key={index} className={className}>{children}</h5>;
+      }
+      if (tag === "h6") {
+        return <h6 key={index} className={className}>{children}</h6>;
+      }
+
+      return <h2 key={index} className={className}>{children}</h2>;
+    }
+
+    case "list":
+      return node.listType === "number" ? (
+        <ol key={index} className="mb-5 list-decimal space-y-2 pl-6 text-gray-200">
+          {children}
+        </ol>
+      ) : (
+        <ul key={index} className="mb-5 list-disc space-y-2 pl-6 text-gray-200">
+          {children}
+        </ul>
+      );
+
+    case "listitem":
+      return <li key={index}>{children}</li>;
+
+    case "quote":
+      return (
+        <blockquote
+          key={index}
+          className="my-6 border-l-4 border-sky-500 pl-5 italic text-gray-300"
+        >
+          {children}
+        </blockquote>
+      );
+
+    case "link":
+    case "autolink": {
+      const href = node.fields?.url || node.url || "#";
+      const newTab = Boolean(node.fields?.newTab);
+
+      return (
+        <a
+          key={index}
+          href={href}
+          target={newTab ? "_blank" : undefined}
+          rel={newTab ? "noopener noreferrer" : undefined}
+          className="text-sky-400 underline underline-offset-4 hover:text-sky-300"
+        >
+          {children}
+        </a>
+      );
+    }
+
+    case "linebreak":
+      return <br key={index} />;
+
+    default:
+      return children.length ? <div key={index}>{children}</div> : null;
+  }
+}
+
+function RichContent({ content }) {
+  if (!content) return null;
+
+  if (typeof content === "string") {
+    return (
+      <p className="mb-5 whitespace-pre-line leading-8 text-gray-200">
+        {content}
+      </p>
+    );
+  }
+
+  const root = content.root || content;
+
+  if (!Array.isArray(root.children)) return null;
+
+  return <div>{renderNode(root, 0)}</div>;
+}
 
 export default function BlogPost() {
   const { slug } = useParams();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    async function fetchPost() {
-      try {
-        setLoading(true);
-        const res = await fetch(`${API}/posts?slug=${slug}&_embed`);
-        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-        const data = await res.json();
+    const controller = new AbortController();
 
-        if (data.length > 0) {
-          setPost(data[0]);
-        } else {
-          setError("Post not found");
+    async function fetchPost() {
+      setLoading(true);
+      setPost(null);
+      setError("");
+
+      try {
+        const result = await loadPost(slug, controller.signal);
+
+        if (!controller.signal.aborted) {
+          if (result) {
+            setPost(result);
+          } else {
+            setError("not-found");
+          }
         }
       } catch (err) {
-        setError(err.message);
+        if (!controller.signal.aborted) {
+          console.error("Failed to load CMS blog:", err);
+          setError("load-failed");
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
 
-    fetchPost();
+    if (slug) {
+      fetchPost();
+    } else {
+      setError("not-found");
+      setLoading(false);
+    }
+
+    return () => controller.abort();
   }, [slug]);
 
-  const getTitle = () => {
-    switch (slug) {
-      case "what-is-white-label-content":
-        return "Get information on what is white label content | Growthshark";
-      case "research-tips-for-writing-content-that-ranks":
-        return "Learn to Write Content That Ranks on Google | Growthshark";
-      case "how-to-create-successful-data-driven-content":
-        return "Know about how to create successful data driven content | Growthshark";
-      case "website-content-audit":
-        return "Identify Website Content Issues | GrowthShark";
-      case "casual-vs-conversational":
-        return "Understand Casual vs Conversational Writing | Growthshark";
-      case "content-site-case-study":
-        return "Get a Real Content Case Study | GrowthShark";
-      case "why-should-content-repurposing-be-a-crucial-part-of-your-content-marketing-strategy":
-        return "Find Smart Content Repurposing Tips | GrowthShark";
-      case "what-is-the-role-of-content-in-digital-marketing":
-        return "Identify what is the role of content in Digital Marketing | Growthshark";
-      case "how-to-deploy-content-effectively-to-maximize-roi-curated-tips-for-businesses-in-2021-from-the-man-himself":
-        return "Know how to Deploy Content Effectively for better reach | Growthshark";
-      default:
-        return `${stripHtmlTags(post?.title?.rendered) || "GrowthShark Blog"} | GrowthShark`;
-    }
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gradient-to-r from-black via-[#0b223f] to-[#06263f] px-4 pt-32 text-center text-white">
+        Loading article...
+      </main>
+    );
+  }
+
+  if (error === "not-found") {
+    return (
+      <main className="grid min-h-screen place-items-center bg-gradient-to-r from-black via-[#0b223f] to-[#06263f] px-4 pt-24 text-center text-white">
+        <div>
+          <h1 className="text-3xl font-bold">Blog not found</h1>
+          <p className="mt-4 text-gray-300">
+            This article may have been unpublished or the URL may be incorrect.
+          </p>
+          <Link to="/blog" className="mt-6 inline-block text-sky-400 underline">
+            Back to blogs
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-gradient-to-r from-black via-[#0b223f] to-[#06263f] px-4 pt-24 text-center text-white">
+        <div>
+          <h1 className="text-2xl font-bold">Unable to load this article</h1>
+          <p className="mt-4 text-gray-300">Please try again later.</p>
+          <Link to="/blog" className="mt-6 inline-block text-sky-400 underline">
+            Back to blogs
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const banner = cmsImg(post.thumbnail);
+  const description =
+    post.seo?.description ||
+    post.excerpt ||
+    plainText(post.sections?.[0]?.richContent, 160) ||
+    "";
+
+  const image = cmsImg(post.seo?.image) || banner;
+  const baseUrl = getBaseUrl();
+  const canonicalUrl = post.slug
+    ? `${baseUrl}/blog/${post.slug}`
+    : undefined;
+
+  const articleSchema = {
+    "@type": "BlogPosting",
+    headline: post.seo?.title || post.title,
+    ...(description ? { description } : {}),
+    ...(image ? { image: [image] } : {}),
+    ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
+    ...(post.updatedAt ? { dateModified: post.updatedAt } : {}),
+    ...(canonicalUrl
+      ? {
+        url: canonicalUrl,
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": canonicalUrl,
+        },
+      }
+      : {}),
   };
-
-  const getDescription = () => {
-    switch (slug) {
-      case "what-is-white-label-content":
-        return "Learn what white label content is and how it helps you scale faster. Discover key benefits and start growing smarter today.";
-      case "research-tips-for-writing-content-that-ranks":
-        return "Find smart research methods to write high-ranking content. GrowthShark shares practical ways to analyze keywords and competitors.";
-      case "how-to-create-successful-data-driven-content":
-        return "Discover how GrowthShark uses data and insights to create high-performing content. Learn simple techniques to boost your content results today.";
-      case "website-content-audit":
-        return "Learn how GrowthShark helps you audit your website content, fix gaps, and improve SEO performance. Start optimizing your site more effectively today.";
-      case "casual-vs-conversational":
-        return "Discover how GrowthShark explains tone differences and helps you choose the best style for engagement. Learn how to improve your writing today.";
-      case "content-site-case-study":
-        return "See how GrowthShark builds successful content sites with real strategies and insights. Learn what works and apply proven methods to your content today.";
-      case "why-should-content-repurposing-be-a-crucial-part-of-your-content-marketing-strategy":
-        return "Learn why repurposing matters and how GrowthShark helps you expand reach and boost ROI. Discover simple ways to turn one asset into many.";
-      case "what-is-the-role-of-content-in-digital-marketing":
-        return "Discover how GrowthShark uses content to drive visibility, traffic, and conversions. Understand why content is essential to your marketing success today.";
-      case "how-to-deploy-content-effectively-to-maximize-roi-curated-tips-for-businesses-in-2021-from-the-man-himself":
-        return "Explore GrowthShark's proven ways to deploy content for better reach and ROI. Learn valuable tips and start improving your content performance today.";
-      default:
-        return (
-          stripHtmlTags(post?.excerpt?.rendered) ||
-          "Read the latest blogs on SEO, marketing, and business growth from GrowthShark."
-        );
-    }
-  };
-
-  if (loading)
-    return <p className="text-center p-4 text-white">Loading post...</p>;
-  if (error)
-    return <p className="text-center text-red-500 p-4">{error}</p>;
-
-  const featuredImage = fixImageUrl(
-    post?._embedded?.["wp:featuredmedia"]?.[0]?.source_url
-  );
-
-  const fixedContent = fixLinks(
-    post?.content?.rendered?.replaceAll(
-      "wordpress-1281832-4641891.cloudwaysapps.com",
-      "proriterz.com"
-    )
-  );
 
   return (
-    <div className="bg-gradient-to-r from-black via-[#0b223f] to-[#06263f] min-h-screen py-10">
-      <Helmet>
-        <title>
-          {getTitle()}
-        </title>
-        <meta name="description" content={getDescription()} />
-      </Helmet>
-      <style>
-        {`
-          .prose p {
-            font-size: 1.125rem;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-          }
+    <>
+      <SEO
+        title={post.seo?.title || post.title}
+        description={description}
+        image={image}
+        keywords={post.seo?.keywords}
+        noindex={post.seo?.noindex}
+        canonicalUrl={canonicalUrl}
+        ogType="article"
+        schema={[articleSchema]}
+      />
 
-          /* Highlighted important sentences */
-          .prose p strong {
-            font-size: 1.75rem;
-            display: block;
-            text-align: left;
-            margin: 2rem 0;
-            font-weight: bold;
-            color: #ffffff;
-          }
+      <main className="min-h-screen bg-gradient-to-r from-black via-[#0b223f] to-[#06263f] px-4 pb-20 pt-32 sm:px-6 sm:pt-36">
+        <article className="mx-auto max-w-6xl">
+          <Link
+            to="/blog"
+            className="mb-8 inline-flex items-center text-sm font-medium text-sky-400 transition hover:text-sky-300"
+          >
+            ← Back to blogs
+          </Link>
 
-          .prose h1 {
-            font-size: 2.75rem;
-            font-weight: bold;
-            margin-top: 2.5rem;
-            margin-bottom: 2rem;
-          }
+          <header className="mb-10">
+            {post.category && (
+              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-sky-400">
+                {post.category}
+              </p>
+            )}
 
-          .prose h2 {
-            font-size: 2.25rem;
-            font-weight: bold;
-            margin-top: 2rem;
-            margin-bottom: 1.75rem;
-          }
+            <h1 className="mx-auto max-w-5xl text-center text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+              {post.title}
+            </h1>
 
-          .prose h3 {
-            font-size: 1.75rem;
-            font-weight: bold;
-            margin-top: 1.75rem;
-            margin-bottom: 1.5rem;
-          }
+            {post.publishedAt && (
+              <time
+                dateTime={post.publishedAt}
+                className="mt-5 block text-center text-sm text-gray-400"
+              >
+                {formatDate(post.publishedAt)}
+              </time>
+            )}
 
-          .prose ul {
-            list-style-type: disc;
-            padding-left: 1.75rem;
-          }
+            {post.excerpt && (
+              <p className="mx-auto mt-6 max-w-3xl text-center text-base leading-8 text-gray-300 sm:text-lg">
+                {post.excerpt}
+              </p>
+            )}
+          </header>
 
-          .prose li {
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
-          }
+          {banner && (
+            <img
+              src={banner}
+              alt={post.title}
+              fetchPriority="high"
+              className="mx-auto mb-12 max-h-[600px] w-full rounded-2xl object-cover shadow-2xl"
+            />
+          )}
 
-          .prose img {
-            max-width: 100%;
-            border-radius: 0.5rem;
-            margin: 1.75rem 0;
-          }
-        `}
-      </style>
+          <div className="mx-auto max-w-4xl">
+            {(post.sections || []).map((section, index) => {
+              const sectionImage = cmsImg(section.sectionImage);
 
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <h1
-          className="text-4xl md:text-5xl font-extrabold text-center text-white leading-snug p-6"
-          dangerouslySetInnerHTML={{ __html: post?.title?.rendered }}
-        />
+              return (
+                <section
+                  key={section.id || `${post.slug}-section-${index}`}
+                  className="mb-10"
+                >
+                  {section.sectionTitle && (
+                    <h2 className="mb-5 mt-8 text-2xl font-bold text-white sm:text-3xl">
+                      {section.sectionTitle}
+                    </h2>
+                  )}
 
-        <div className="flex justify-center p-6">
-          <img
-            src={featuredImage}
-            alt={post?.title?.rendered || "Blog Image"}
-            className="rounded-xl shadow-2xl max-h-[450px] w-full object-cover"
-          />
-        </div>
+                  {sectionImage && (
+                    <img
+                      src={sectionImage}
+                      alt={section.sectionTitle || post.title}
+                      loading="lazy"
+                      className="mb-6 w-full rounded-xl object-cover"
+                    />
+                  )}
 
-        <div
-          className="prose prose-lg prose-invert max-w-none text-white mx-auto
-                     [&_a]:text-sky-400 [&_a:hover]:text-sky-500 [&_a:hover]:underline"
-          dangerouslySetInnerHTML={{ __html: fixedContent }}
-        />
-      </div>
-    </div>
+                  <RichContent content={section.richContent} />
+                </section>
+              );
+            })}
+          </div>
+        </article>
+      </main>
+    </>
   );
 }
+

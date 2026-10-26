@@ -4,19 +4,47 @@ import {
   ItalicFeature,
   LinkFeature,
   ParagraphFeature,
+  HeadingFeature,
+  UnorderedListFeature,
+  OrderedListFeature,
+  FixedToolbarFeature,
+  InlineToolbarFeature,
+  UploadFeature,
   lexicalEditor,
   UnderlineFeature,
+  StrikethroughFeature,
+  AlignFeature,
   type LinkFields,
 } from '@payloadcms/richtext-lexical'
 
 export const defaultLexical = lexicalEditor({
   features: [
+    FixedToolbarFeature(),
+    InlineToolbarFeature(),
     ParagraphFeature(),
-    UnderlineFeature(),
+    HeadingFeature({ enabledHeadingSizes: ['h2', 'h3', 'h4'] }),
     BoldFeature(),
     ItalicFeature(),
+    UnderlineFeature(),
+    StrikethroughFeature(),
+    UnorderedListFeature(),
+    OrderedListFeature(),
+    AlignFeature(),
+    UploadFeature({
+      collections: {
+        media: {
+          fields: [
+            {
+              name: 'alt',
+              type: 'text',
+              required: true,
+            },
+          ],
+        },
+      },
+    }),
     LinkFeature({
-      enabledCollections: ['pages', 'posts'],
+      enabledCollections: ['pages', 'posts', 'portfolio'],
       fields: ({ defaultFields }) => {
         const defaultFieldsWithoutUrl = defaultFields.filter((field) => {
           if ('name' in field && field.name === 'url') return false
@@ -35,7 +63,7 @@ export const defaultLexical = lexicalEditor({
             required: true,
             validate: ((value, options) => {
               if ((options?.siblingData as LinkFields)?.linkType === 'internal') {
-                return true // no validation needed, as no url should exist for internal links
+                return true
               }
               return value ? true : 'URL is required'
             }) as TextFieldSingleValidation,
