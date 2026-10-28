@@ -30,8 +30,8 @@ const dirname = path.dirname(filename)
 const allowedOrigins = [
   getServerSideURL(),
   'http://localhost:5173',
-  'https://growth-shark-payload-cms-intigrate-git-main-dutta.vercel.app',
-  // Add your actual frontend Vercel URL here if different.
+  'https://growth-shark-payload-cms-intigrate.vercel.app',
+  'https://growth-shark-payload-cms-intigrate-mu.vercel.app',
 ].filter(Boolean)
 
 export default buildConfig({
