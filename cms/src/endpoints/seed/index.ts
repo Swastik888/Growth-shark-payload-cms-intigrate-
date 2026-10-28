@@ -1,4 +1,4 @@
-import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest, File } from 'payload'
+import type { CollectionSlug, Payload, PayloadRequest, File } from 'payload'
 
 import { contactForm as contactFormData } from './contact-form'
 import { contact as contactPageData } from './contact-page'
@@ -20,14 +20,10 @@ const collections: CollectionSlug[] = [
   'search',
 ]
 
-const globals: GlobalSlug[] = ['header', 'footer']
-
 const categories = ['Technology', 'News', 'Finance', 'Design', 'Software', 'Engineering']
 
-// Next.js revalidation errors are normal when seeding the database without a server running
-// i.e. running `yarn seed` locally instead of using the admin UI within an active app
-// The app is not running to revalidate the pages and so the API routes are not available
-// These error messages can be ignored: `Error hitting revalidate route for...`
+// Next.js revalidation errors are normal when seeding the database without a server running.
+// The app is not running to revalidate pages, so these errors can be ignored.
 export const seed = async ({
   payload,
   req,
@@ -37,27 +33,9 @@ export const seed = async ({
 }): Promise<void> => {
   payload.logger.info('Seeding database...')
 
-  // we need to clear the media directory before seeding
-  // as well as the collections and globals
-  // this is because while `yarn seed` drops the database
-  // the custom `/api/seed` endpoint does not
-  payload.logger.info(`— Clearing collections and globals...`)
-
-  // clear the database
-  await Promise.all(
-    globals.map((global) =>
-      payload.updateGlobal({
-        slug: global,
-        data: {
-          navItems: [],
-        },
-        depth: 0,
-        context: {
-          disableRevalidate: true,
-        },
-      }),
-    ),
-  )
+  // WARNING: This seed function clears the collections listed below.
+  // It does not reset or modify any globals.
+  payload.logger.info('Clearing collections...')
 
   await Promise.all(
     collections.map((collection) => payload.db.deleteMany({ collection, req, where: {} })),
@@ -69,7 +47,7 @@ export const seed = async ({
       .map((collection) => payload.db.deleteVersions({ collection, req, where: {} })),
   )
 
-  payload.logger.info(`— Seeding demo author and user...`)
+  payload.logger.info('Seeding demo author and user...')
 
   await payload.delete({
     collection: 'users',
@@ -81,7 +59,7 @@ export const seed = async ({
     },
   })
 
-  payload.logger.info(`— Seeding media...`)
+  payload.logger.info('Seeding media...')
 
   const [image1Buffer, image2Buffer, image3Buffer, hero1Buffer] = await Promise.all([
     fetchFileByURL(
@@ -138,17 +116,20 @@ export const seed = async ({
     ),
   ])
 
-  payload.logger.info(`— Seeding posts...`)
+  payload.logger.info('Seeding posts...')
 
-  // Do not create posts with `Promise.all` because we want the posts to be created in order
-  // This way we can sort them by `createdAt` or `publishedAt` and they will be in the expected order
+  // Create posts in order so their timestamps remain predictable.
   const post1Doc = await payload.create({
     collection: 'posts',
     depth: 0,
     context: {
       disableRevalidate: true,
     },
-    data: post1({ heroImage: image1Doc, blockImage: image2Doc, author: demoAuthor }),
+    data: post1({
+      heroImage: image1Doc,
+      blockImage: image2Doc,
+      author: demoAuthor,
+    }),
   })
 
   const post2Doc = await payload.create({
@@ -157,7 +138,11 @@ export const seed = async ({
     context: {
       disableRevalidate: true,
     },
-    data: post2({ heroImage: image2Doc, blockImage: image3Doc, author: demoAuthor }),
+    data: post2({
+      heroImage: image2Doc,
+      blockImage: image3Doc,
+      author: demoAuthor,
+    }),
   })
 
   const post3Doc = await payload.create({
@@ -166,10 +151,14 @@ export const seed = async ({
     context: {
       disableRevalidate: true,
     },
-    data: post3({ heroImage: image3Doc, blockImage: image1Doc, author: demoAuthor }),
+    data: post3({
+      heroImage: image3Doc,
+      blockImage: image1Doc,
+      author: demoAuthor,
+    }),
   })
 
-  // update each post with related posts
+  // Update each post with related posts.
   await payload.update({
     id: post1Doc.id,
     collection: 'posts',
@@ -177,6 +166,7 @@ export const seed = async ({
       relatedPosts: [post2Doc.id, post3Doc.id],
     },
   })
+
   await payload.update({
     id: post2Doc.id,
     collection: 'posts',
@@ -184,6 +174,7 @@ export const seed = async ({
       relatedPosts: [post1Doc.id, post3Doc.id],
     },
   })
+
   await payload.update({
     id: post3Doc.id,
     collection: 'posts',
@@ -192,7 +183,7 @@ export const seed = async ({
     },
   })
 
-  payload.logger.info(`— Seeding contact form...`)
+  payload.logger.info('Seeding contact form...')
 
   const contactForm = await payload.create({
     collection: 'forms',
@@ -200,79 +191,28 @@ export const seed = async ({
     data: contactFormData,
   })
 
-  payload.logger.info(`— Seeding pages...`)
-
-  const [_, contactPage] = await Promise.all([
-    payload.create({
-      collection: 'pages',
-      depth: 0,
-      data: home({ heroImage: imageHomeDoc, metaImage: image2Doc }),
-    }),
-    payload.create({
-      collection: 'pages',
-      depth: 0,
-      data: contactPageData({ contactForm: contactForm }),
-    }),
-  ])
-
-  payload.logger.info(`— Seeding globals...`)
+  payload.logger.info('Seeding pages...')
 
   await Promise.all([
-    payload.updateGlobal({
-      slug: 'header',
-      data: {
-        navItems: [
-          {
-            link: {
-              type: 'custom',
-              label: 'Posts',
-              url: '/posts',
-            },
-          },
-          {
-            link: {
-              type: 'reference',
-              label: 'Contact',
-              reference: {
-                relationTo: 'pages',
-                value: contactPage.id,
-              },
-            },
-          },
-        ],
-      },
+    payload.create({
+      collection: 'pages',
+      depth: 0,
+      data: home({
+        heroImage: imageHomeDoc,
+        metaImage: image2Doc,
+      }),
     }),
-    payload.updateGlobal({
-      slug: 'footer',
-      data: {
-        navItems: [
-          {
-            link: {
-              type: 'custom',
-              label: 'Admin',
-              url: '/admin',
-            },
-          },
-          {
-            link: {
-              type: 'custom',
-              label: 'Source Code',
-              newTab: true,
-              url: 'https://github.com/payloadcms/payload/tree/3.x/templates/website',
-            },
-          },
-          {
-            link: {
-              type: 'custom',
-              label: 'Payload',
-              newTab: true,
-              url: 'https://payloadcms.com/',
-            },
-          },
-        ],
-      },
+    payload.create({
+      collection: 'pages',
+      depth: 0,
+      data: contactPageData({
+        contactForm,
+      }),
     }),
   ])
+
+  // Header, Footer, and all other globals are intentionally left untouched.
+  payload.logger.info('Skipping global seeding...')
 
   payload.logger.info('Seeded database successfully!')
 }
