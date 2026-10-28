@@ -27,7 +27,12 @@ import { Blogs } from './collections/Blogs'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const allowedOrigins = [getServerSideURL(), 'http://localhost:5173'].filter(Boolean)
+const allowedOrigins = [
+  getServerSideURL(),
+  'http://localhost:5173',
+  'https://growth-shark-payload-cms-intigrate-git-main-dutta.vercel.app',
+  // Add your actual frontend Vercel URL here if different.
+].filter(Boolean)
 
 export default buildConfig({
   admin: {
