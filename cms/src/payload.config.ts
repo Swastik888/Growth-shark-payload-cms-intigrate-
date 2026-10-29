@@ -3,14 +3,13 @@ import sharp from 'sharp'
 import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
+import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 
 import { Categories } from './collections/Categories'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
-import { Footer } from './Footer/config'
-import { Header } from './Header/config'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
@@ -52,27 +51,46 @@ export default buildConfig({
       ],
     },
   },
-  // Uses updated defaultLexical with FixedToolbarFeature
+
   editor: defaultLexical,
+
   db: mongooseAdapter({
     url: process.env.DATABASE_URL || '',
   }),
+
   collections: [Pages, Posts, Media, Categories, Users, Portfolio, Services, Blogs],
+
   cors: allowedOrigins,
   csrf: allowedOrigins,
-  globals: [Header, Footer, Home, PageSEO, CareerPage, AboutPage, ContactPage],
-  plugins,
+
+  globals: [Home, PageSEO, CareerPage, AboutPage, ContactPage],
+
+  plugins: [
+    vercelBlobStorage({
+      collections: {
+        media: true,
+      },
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    }),
+    ...plugins,
+  ],
+
   secret: process.env.PAYLOAD_SECRET,
+
   sharp,
+
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
+
   jobs: {
     access: {
       run: ({ req }: { req: PayloadRequest }): boolean => {
         if (req.user) return true
+
         const secret = process.env.CRON_SECRET
         if (!secret) return false
+
         const authHeader = req.headers.get('authorization')
         return authHeader === `Bearer ${secret}`
       },
@@ -80,3 +98,4 @@ export default buildConfig({
     tasks: [],
   },
 })
+
