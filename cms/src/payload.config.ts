@@ -10,6 +10,8 @@ import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
+import { Footer } from './Footer/config'
+import { Header } from './Header/config'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
@@ -63,7 +65,8 @@ export default buildConfig({
   cors: allowedOrigins,
   csrf: allowedOrigins,
 
-  globals: [Home, PageSEO, CareerPage, AboutPage, ContactPage],
+  globals: [Header, Footer, Home, PageSEO, CareerPage, AboutPage, ContactPage],
+
 
   plugins: [
     vercelBlobStorage({
